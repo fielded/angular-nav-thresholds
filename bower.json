@@ -1,0 +1,17 @@
+{
+  "name": "angular-nav-thresholds",
+  "description": "Angular NAV module for calculating thresholds",
+  "main": "dist/bundle.js",
+  "authors": [
+    "Patricia Garcia <pat@patriciagarcia.me>"
+  ],
+  "license": "Apache 2.0",
+  "homepage": "https://github.com/fielded/angular-nav-thresholds",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}
