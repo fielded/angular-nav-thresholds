@@ -7,9 +7,7 @@ const find = (list, match) => {
   return undefined
 }
 
-const isVersion = (version, item) => {
-  return item.version === version
-}
+const isVersion = (version, item) => item.version === version
 
 class ThresholdsService {
   calculateThresholds (location, stockCount) {
@@ -22,8 +20,16 @@ class ThresholdsService {
       return
     }
 
-    const weeklyLevels = find(location.allocations, isVersion.bind(null, stockCount.allocations.version)).weeklyLevels
-    const weeksOfStock = find(location.plans, isVersion.bind(null, stockCount.plans.version)).weeksOfStock
+    const allocation = find(location.allocations, isVersion.bind(null, stockCount.allocations.version))
+    if (!(allocation && allocation.weeklyLevels)) {
+      return
+    }
+    const plan = find(location.plans, isVersion.bind(null, stockCount.plans.version))
+    if (!(plan && plan.weeksOfStock)) {
+      return
+    }
+    const weeklyLevels = allocation.weeklyLevels
+    const weeksOfStock = plan.weeksOfStock
 
     let thresholds = Object.keys(weeklyLevels).reduce((index, product) => {
       index[product] = Object.keys(weeksOfStock).reduce((productThresholds, threshold) => {
