@@ -9,7 +9,16 @@ const find = (list, match) => {
 
 const isVersion = (version, item) => item.version === version
 
+const isId = (id, item) => item._id === id
+
 class ThresholdsService {
+  constructor ($q, smartId, lgasService, statesService) {
+    this.$q = $q
+    this.smartId = smartId
+    this.lgasService = lgasService
+    this.statesService = statesService
+  }
+
   calculateThresholds (location, stockCount) {
     if (!location || !location.allocations || !location.plans) {
       return
@@ -41,6 +50,51 @@ class ThresholdsService {
 
     return thresholds
   }
+
+  getThresholdsFor (stockCounts) {
+    // TODO: make it work for zones too
+    const locationIdPattern = 'zone:?state:?lga'
+    let index = {}
+    let promises = {}
+
+    index = stockCounts.reduce((index, stockCount) => {
+      let scLocation = stockCount.location
+      if (!scLocation) {
+        return index
+      }
+
+      const id = this.smartId.idify(scLocation, locationIdPattern)
+      const allocations = stockCount.allocations || { version: 1 }
+      const plans = stockCount.plans || { version: 1 }
+      index[id] = angular.merge({}, { allocations: allocations, plans: plans })
+
+      if (scLocation.lga && !promises.lga) {
+        promises.lga = this.lgasService.list()
+        index[id].type = 'lga'
+      } else if (scLocation.state && !promises.state) {
+        promises.state = this.statesService.list()
+        index[id].type = 'state'
+      }
+
+      return index
+    }, {})
+
+    const addThresholds = (promisesRes) => {
+      Object.keys(index).forEach((key) => {
+        const item = index[key]
+        const location = find(promisesRes[item.type], isId.bind(null, key))
+        item.thresholds = this.calculateThresholds(location, item)
+        delete item.type
+      })
+
+      return index
+    }
+
+    return this.$q.all(promises)
+      .then(addThresholds)
+  }
 }
+
+ThresholdsService.$inject = ['$q', 'smartId', 'lgasService', 'statesService']
 
 export default ThresholdsService
