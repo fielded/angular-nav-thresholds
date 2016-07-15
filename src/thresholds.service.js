@@ -68,11 +68,15 @@ class ThresholdsService {
       const plans = stockCount.plans || { version: 1 }
       index[id] = angular.merge({}, { allocations: allocations, plans: plans })
 
-      if (scLocation.lga && !promises.lga) {
-        promises.lga = this.lgasService.list()
+      if (scLocation.lga) {
+        if (!promises.lga) {
+          promises.lga = this.lgasService.list()
+        }
         index[id].type = 'lga'
-      } else if (scLocation.state && !promises.state) {
-        promises.state = this.statesService.list()
+      } else if (scLocation.state) {
+        if (!promises.state) {
+          promises.state = this.statesService.list()
+        }
         index[id].type = 'state'
       }
 
