@@ -46,6 +46,10 @@ describe('thresholds service', function () {
         }
       }
     ],
+    targetPopulation: {
+      'product:a': 1000,
+      'product:b': 2000
+    },
     plans: [
       {
         version: 1,
@@ -75,12 +79,14 @@ describe('thresholds service', function () {
         'product:a': {
           min: 100,
           reOrder: 200,
-          max: 500
+          max: 500,
+          targetPopulation: 1000
         },
         'product:b': {
           min: 200,
           reOrder: 400,
-          max: 1000
+          max: 1000,
+          targetPopulation: 2000
         }
       }
       var actual = thresholdsService.calculateThresholds(location, stockCount)
@@ -101,16 +107,16 @@ describe('thresholds service', function () {
           allocations: { version: 2 },
           plans: { version: 1 },
           thresholds: {
-            'product:a': { min: 100, reOrder: 200, max: 500 },
-            'product:b': { min: 200, reOrder: 400, max: 1000 }
+            'product:a': { min: 100, reOrder: 200, max: 500, targetPopulation: 1000 },
+            'product:b': { min: 200, reOrder: 400, max: 1000, targetPopulation: 2000 }
           }
         },
         'zone:nc:state:kogi:lga:adavi': {
           allocations: { version: 1 },
           plans: { version: 1 },
           thresholds: {
-            'product:a': { min: 50, reOrder: 100, max: 250 },
-            'product:b': { min: 100, reOrder: 200, max: 500 }
+            'product:a': { min: 50, reOrder: 100, max: 250, targetPopulation: 1000 },
+            'product:b': { min: 100, reOrder: 200, max: 500, targetPopulation: 2000 }
           }
         }
       }
