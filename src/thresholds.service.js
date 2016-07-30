@@ -45,7 +45,9 @@ class ThresholdsService {
         productThresholds[threshold] = Math.round(weeklyLevels[product] * weeksOfStock[threshold])
         return productThresholds
       }, {})
-      index[product].targetPopulation = location.targetPopulation[product]
+      if (location.targetPopulation) {
+        index[product].targetPopulation = location.targetPopulation[product]
+      }
       return index
     }, {})
 
