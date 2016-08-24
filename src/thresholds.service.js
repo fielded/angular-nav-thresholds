@@ -11,6 +11,13 @@ const isVersion = (version, item) => item.version === version
 
 const isId = (id, item) => item._id === id
 
+// Zones config
+const zonesPlan = {
+  min: 0,
+  reOrder: 3,
+  max: 6
+}
+
 class ThresholdsService {
   constructor ($q, smartId, lgasService, statesService) {
     this.$q = $q
@@ -19,8 +26,15 @@ class ThresholdsService {
     this.statesService = statesService
   }
 
-  calculateThresholds (location, stockCount) {
-    if (!location || !location.allocations || !location.plans) {
+  // For zones the thresholds are based on the state store required allocation for
+  // the week, that information is passed as an optional param (`requiredStateStoresAllocation`).
+  // That param is only used for zones.
+  calculateThresholds (location, stockCount, requiredStateStoresAllocation) {
+    if (!location || !location.allocations || !location.plans || !location.level) {
+      return
+    }
+
+    if (location.level === 'zone' && !requiredStateStoresAllocation) {
       return
     }
 
@@ -33,21 +47,33 @@ class ThresholdsService {
     if (!(allocation && allocation.weeklyLevels)) {
       return
     }
-    const plan = find(location.plans, isVersion.bind(null, stockCount.plans.version))
-    if (!(plan && plan.weeksOfStock)) {
-      return
-    }
+
     const weeklyLevels = allocation.weeklyLevels
-    const weeksOfStock = plan.weeksOfStock
+    let weeksOfStock = zonesPlan
+
+    if (location.level !== 'zone') {
+      const plan = find(location.plans, isVersion.bind(null, stockCount.plans.version))
+      if (!(plan && plan.weeksOfStock)) {
+        return
+      }
+      weeksOfStock = plan.weeksOfStock
+    }
 
     let thresholds = Object.keys(weeklyLevels).reduce((index, product) => {
       index[product] = Object.keys(weeksOfStock).reduce((productThresholds, threshold) => {
         productThresholds[threshold] = Math.round(weeklyLevels[product] * weeksOfStock[threshold])
+
+        if (location.level === 'zone') {
+          productThresholds[threshold] += requiredStateStoresAllocation[product]
+        }
+
         return productThresholds
       }, {})
+
       if (location.targetPopulation) {
         index[product].targetPopulation = location.targetPopulation[product]
       }
+
       return index
     }, {})
 
@@ -55,7 +81,9 @@ class ThresholdsService {
   }
 
   getThresholdsFor (stockCounts) {
-    // TODO: make it work for zones too
+    // TODO: make it work for zones too.
+    // For making it work with zones, we need to take into account the amount of stock
+    // to be allocated to the zone state stores in a particular week
     const locationIdPattern = 'zone:?state:?lga'
     let index = {}
     let promises = {}
