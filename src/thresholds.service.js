@@ -29,12 +29,8 @@ class ThresholdsService {
   // For zones the thresholds are based on the state store required allocation for
   // the week, that information is passed as an optional param (`requiredStateStoresAllocation`).
   // That param is only used for zones.
-  calculateThresholds (location, stockCount, requiredStateStoresAllocation) {
+  calculateThresholds (location, stockCount, requiredStateStoresAllocation = {}) {
     if (!location || !location.allocations || !location.plans || !location.level) {
-      return
-    }
-
-    if (location.level === 'zone' && !requiredStateStoresAllocation) {
       return
     }
 
@@ -63,7 +59,7 @@ class ThresholdsService {
       index[product] = Object.keys(weeksOfStock).reduce((productThresholds, threshold) => {
         productThresholds[threshold] = Math.round(weeklyLevels[product] * weeksOfStock[threshold])
 
-        if (location.level === 'zone') {
+        if (location.level === 'zone' && requiredStateStoresAllocation[product]) {
           productThresholds[threshold] += requiredStateStoresAllocation[product]
         }
 
