@@ -93,10 +93,32 @@ describe('thresholds service', function () {
       var actual = thresholdsService.calculateThresholds(location, stockCount)
       expect(actual).toEqual(expected)
     })
-    it('also works with zones where the thresholds are based on required allocation for zone state stores', function () {
+    it('also works with zones', function () {
       var zone = angular.extend({}, location, { level: 'zone' })
       // Note: `plans.weeksOfStock` is ignored (at least for now) in the case of zone stores
-      var requiredStatesStoresAllocation = { 'product:a': 20, 'product:b': 50 }
+      // See https://github.com/fielded/angular-nav-thresholds/issues/9
+      var expected = {
+        'product:a': {
+          min: 0,
+          reOrder: 300,
+          max: 600,
+          targetPopulation: 1000
+        },
+        'product:b': {
+          min: 0,
+          reOrder: 600,
+          max: 1200,
+          targetPopulation: 2000
+        }
+      }
+      var actual = thresholdsService.calculateThresholds(zone, stockCount)
+      expect(actual).toEqual(expected)
+    })
+    it('works with zones if there is a required allocation for zone state stores', function () {
+      var zone = angular.extend({}, location, { level: 'zone' })
+      // Note: `plans.weeksOfStock` is ignored (at least for now) in the case of zone stores
+      // See https://github.com/fielded/angular-nav-thresholds/issues/9
+      var requiredStatesStoresAllocation = { 'product:a': 20 }
       var expected = {
         'product:a': {
           min: 20,
@@ -105,9 +127,9 @@ describe('thresholds service', function () {
           targetPopulation: 1000
         },
         'product:b': {
-          min: 50,
-          reOrder: 650,
-          max: 1250,
+          min: 0,
+          reOrder: 600,
+          max: 1200,
           targetPopulation: 2000
         }
       }
