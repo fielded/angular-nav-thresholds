@@ -31,6 +31,7 @@ describe('thresholds service', function () {
   }))
 
   var location = {
+    level: 'lga',
     allocations: [
       { version: 1,
         weeklyLevels: {
@@ -90,7 +91,50 @@ describe('thresholds service', function () {
         }
       }
       var actual = thresholdsService.calculateThresholds(location, stockCount)
-      expect(expected).toEqual(actual)
+      expect(actual).toEqual(expected)
+    })
+    it('also works with zones', function () {
+      var zone = angular.extend({}, location, { level: 'zone' })
+      // Note: `plans.weeksOfStock` is ignored (at least for now) in the case of zone stores
+      // See https://github.com/fielded/angular-nav-thresholds/issues/9
+      var expected = {
+        'product:a': {
+          min: 0,
+          reOrder: 300,
+          max: 600,
+          targetPopulation: 1000
+        },
+        'product:b': {
+          min: 0,
+          reOrder: 600,
+          max: 1200,
+          targetPopulation: 2000
+        }
+      }
+      var actual = thresholdsService.calculateThresholds(zone, stockCount)
+      expect(actual).toEqual(expected)
+    })
+    it('works with zones if there is a required allocation for zone state stores', function () {
+      var zone = angular.extend({}, location, { level: 'zone' })
+      // Note: `plans.weeksOfStock` is ignored (at least for now) in the case of zone stores
+      // See https://github.com/fielded/angular-nav-thresholds/issues/9
+      var requiredStatesStoresAllocation = { 'product:a': 20 }
+      var expected = {
+        'product:a': {
+          min: 20,
+          reOrder: 320,
+          max: 620,
+          targetPopulation: 1000
+        },
+        'product:b': {
+          min: 0,
+          reOrder: 600,
+          max: 1200,
+          targetPopulation: 2000
+        }
+      }
+      var actual = thresholdsService.calculateThresholds(zone, stockCount, requiredStatesStoresAllocation)
+      expect(actual).toEqual(expected)
     })
   })
 
@@ -123,7 +167,7 @@ describe('thresholds service', function () {
 
       thresholdsService.getThresholdsFor(stockCounts)
         .then(function (thresholds) {
-          expect(expected).toEqual(thresholds)
+          expect(thresholds).toEqual(expected)
         })
       $rootScope.$digest()
       done()
