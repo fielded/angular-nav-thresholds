@@ -1,6 +1,20 @@
 # angular-nav-thresholds
 
-[![Build Status](https://travis-ci.org/fielded/angular-nav-thresholds.svg)](https://travis-ci.org/fielded/angular-nav-thresholds) ![Dependecy Status](https://david-dm.org/fielded/angular-nav-thresholds.svg) ![Dev Dependecy Status](https://david-dm.org/fielded/angular-nav-thresholds/dev-status.svg)
+[![Build Status][travis-image]][travis-url]
+[![npm version][npm-image]][npm-url]
+[![License][license-image]][license-url]
+[![semantic-release][semantic-release-image]][semantic-release-url]
+
+[travis-url]: https://travis-ci.org/fielded/angular-nav-thresholds
+[travis-image]: https://img.shields.io/travis/fielded/angular-nav-thresholds.svg
+[npm-url]: https://www.npmjs.com/package/angular-nav-thresholds
+[npm-image]: https://img.shields.io/npm/v/angular-nav-thresholds.svg
+[license-url]: https://opensource.org/licenses/Apache-2.0
+[license-image]: https://img.shields.io/npm/l/angular-nav-thresholds.svg
+[semantic-release-url]: https://github.com/semantic-release/semantic-release
+[semantic-release-image]: https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-semantic--release-e10079.svg
+
+> Angular NAV module for calculating thresholds
 
 ## Installation
 
@@ -10,7 +24,7 @@ Install with `bower`:
 
 or `npm`:
 
-    npm install --save fielded/angular-nav-thresholds
+    npm install --save angular-nav-thresholds
 
 Then simply add `angularNavThresholds` as a dependency somewhere in your project that makes sense and you're good to go.
 
@@ -42,7 +56,9 @@ npm test
 
 ## Release Process
 
-To make a release, you need to run `npm run build`, commit the `dist` folder and tag the commit with an appropiate version according to the [SemVer spec](http://semver.org/).
+This project uses [semantic-release][semantic-release-url] following the [AngularJS Git commit conventions][ccng].
+
+[ccng]: https://github.com/conventional-changelog/conventional-changelog-angular/blob/e32d954eac0766916b9b7408efed95d643a198a9/convention.md
 
 ## License
 
