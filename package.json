@@ -70,6 +70,6 @@
     }
   },
   "files": [
-    "dist/bundle.js"
+    "dist/*"
   ]
 }
