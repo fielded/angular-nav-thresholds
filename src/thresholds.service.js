@@ -64,14 +64,17 @@ class ThresholdsService {
       index[productId] = Object.keys(weeksOfStock).reduce((productThresholds, threshold) => {
         const level = weeklyLevels[productId] * weeksOfStock[threshold]
         const product = find(products, isId.bind(null, productId))
+
+        // Default rounding used in VSPMD and highest possible presentation
+        let presentation = 20
+
         if (product && product.presentation) {
           // TODO: product presentations should be ints, not strings
-          const presentation = parseInt(product.presentation, 10)
-          const roundedLevel = Math.ceil(level / presentation) * presentation
-          productThresholds[threshold] = roundedLevel
-        } else {
-          productThresholds[threshold] = level
+          presentation = parseInt(product.presentation, 10)
         }
+
+        const roundedLevel = Math.ceil(level / presentation) * presentation
+        productThresholds[threshold] = roundedLevel
 
         if (location.level === 'zone' && requiredStateStoresAllocation[productId]) {
           productThresholds[threshold] += requiredStateStoresAllocation[productId]
