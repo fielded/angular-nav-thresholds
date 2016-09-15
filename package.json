@@ -11,6 +11,9 @@
   "keywords": [],
   "author": "Patricia Garcia <pat@patriciagarcia.me>",
   "license": "Apache 2.0",
+  "engines": {
+    "node": ">=5"
+  },
   "dependencies": {
     "angular": "^1.5.5"
   },
