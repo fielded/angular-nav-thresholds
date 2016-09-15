@@ -5,6 +5,7 @@
   "main": "dist/bundle.js",
   "scripts": {
     "build": "rollup -c",
+    "postbuild": "uglifyjs dist/bundle.js --compress --mangle --output dist/bundle.min.js",
     "pretest": "standard",
     "test": "npm run -s build && karma start"
   },
@@ -28,8 +29,8 @@
     "rollup-plugin-babel": "^2.4.0",
     "rollup-plugin-commonjs": "^2.2.1",
     "rollup-plugin-node-resolve": "^1.5.0",
-    "rollup-plugin-uglify": "^1.0.0",
-    "standard": "^7.1.1"
+    "standard": "^7.1.1",
+    "uglify-js": "^2.7.3"
   },
   "standard": {
     "globals": [
