@@ -74,6 +74,12 @@ describe('thresholds service', function () {
     { location: { zone: 'nc', state: 'kogi', lga: 'adavi' } }
   ]
 
+  var products = [
+    // TODO: presentation should be ints
+    { _id: 'product:a', presentation: '10' },
+    { _id: 'product:b', presentation: '2' }
+  ]
+
   describe('calculateThresholds', function () {
     it('takes a location and a stockCount and returns the min, reOrder, max thresholds', function () {
       var expected = {
@@ -90,7 +96,7 @@ describe('thresholds service', function () {
           targetPopulation: 2000
         }
       }
-      var actual = thresholdsService.calculateThresholds(location, stockCount)
+      var actual = thresholdsService.calculateThresholds(location, stockCount, products)
       expect(actual).toEqual(expected)
     })
     it('also works with zones', function () {
@@ -111,7 +117,7 @@ describe('thresholds service', function () {
           targetPopulation: 2000
         }
       }
-      var actual = thresholdsService.calculateThresholds(zone, stockCount)
+      var actual = thresholdsService.calculateThresholds(zone, stockCount, products)
       expect(actual).toEqual(expected)
     })
     it('works with zones if there is a required allocation for zone state stores', function () {
@@ -133,7 +139,36 @@ describe('thresholds service', function () {
           targetPopulation: 2000
         }
       }
-      var actual = thresholdsService.calculateThresholds(zone, stockCount, requiredStatesStoresAllocation)
+      var actual = thresholdsService.calculateThresholds(zone, stockCount, products, requiredStatesStoresAllocation)
+      expect(actual).toEqual(expected)
+    })
+    it('rounds allocations up to the product presentation', function () {
+      var unroundedLocation = angular.extend({}, location, {
+        allocations: [
+          {
+            version: 2,
+            weeklyLevels: {
+              'product:a': 99.141592,
+              'product:b': 43.892
+            }
+          }
+        ]
+      })
+      var expected = {
+        'product:a': {
+          min: 100,
+          reOrder: 200,
+          max: 500,
+          targetPopulation: 1000
+        },
+        'product:b': {
+          min: 44,
+          reOrder: 88,
+          max: 220,
+          targetPopulation: 2000
+        }
+      }
+      var actual = thresholdsService.calculateThresholds(unroundedLocation, stockCount, products)
       expect(actual).toEqual(expected)
     })
   })
@@ -165,7 +200,7 @@ describe('thresholds service', function () {
         }
       }
 
-      thresholdsService.getThresholdsFor(stockCounts)
+      thresholdsService.getThresholdsFor(stockCounts, products)
         .then(function (thresholds) {
           expect(thresholds).toEqual(expected)
         })

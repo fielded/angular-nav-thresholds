@@ -1,3 +1,4 @@
+// TODO: replace with Array#find ponyfill
 const find = (list, match) => {
   for (let i = 0; i < list.length; i++) {
     if (match(list[i])) {
@@ -29,13 +30,17 @@ class ThresholdsService {
   // For zones the thresholds are based on the state store required allocation for
   // the week, that information is passed as an optional param (`requiredStateStoresAllocation`).
   // That param is only used for zones.
-  calculateThresholds (location, stockCount, requiredStateStoresAllocation = {}) {
+  calculateThresholds (location, stockCount, products, requiredStateStoresAllocation = {}) {
     if (!location || !location.allocations || !location.plans || !location.level) {
       return
     }
 
     if (!stockCount || !stockCount.allocations || !stockCount.allocations.version ||
         !stockCount.plans || !stockCount.plans.version) {
+      return
+    }
+
+    if (!products || !products.length) {
       return
     }
 
@@ -55,19 +60,31 @@ class ThresholdsService {
       weeksOfStock = plan.weeksOfStock
     }
 
-    let thresholds = Object.keys(weeklyLevels).reduce((index, product) => {
-      index[product] = Object.keys(weeksOfStock).reduce((productThresholds, threshold) => {
-        productThresholds[threshold] = Math.round(weeklyLevels[product] * weeksOfStock[threshold])
+    let thresholds = Object.keys(weeklyLevels).reduce((index, productId) => {
+      index[productId] = Object.keys(weeksOfStock).reduce((productThresholds, threshold) => {
+        const level = weeklyLevels[productId] * weeksOfStock[threshold]
+        const product = find(products, isId.bind(null, productId))
 
-        if (location.level === 'zone' && requiredStateStoresAllocation[product]) {
-          productThresholds[threshold] += requiredStateStoresAllocation[product]
+        // Default rounding used in VSPMD and highest possible presentation
+        let presentation = 20
+
+        if (product && product.presentation) {
+          // TODO: product presentations should be ints, not strings
+          presentation = parseInt(product.presentation, 10)
+        }
+
+        const roundedLevel = Math.ceil(level / presentation) * presentation
+        productThresholds[threshold] = roundedLevel
+
+        if (location.level === 'zone' && requiredStateStoresAllocation[productId]) {
+          productThresholds[threshold] += requiredStateStoresAllocation[productId]
         }
 
         return productThresholds
       }, {})
 
       if (location.targetPopulation) {
-        index[product].targetPopulation = location.targetPopulation[product]
+        index[productId].targetPopulation = location.targetPopulation[productId]
       }
 
       return index
@@ -76,7 +93,7 @@ class ThresholdsService {
     return thresholds
   }
 
-  getThresholdsFor (stockCounts) {
+  getThresholdsFor (stockCounts, products) {
     // TODO: make it work for zones too.
     // For making it work with zones, we need to take into account the amount of stock
     // to be allocated to the zone state stores in a particular week
@@ -114,7 +131,7 @@ class ThresholdsService {
       Object.keys(index).forEach((key) => {
         const item = index[key]
         const location = find(promisesRes[item.type], isId.bind(null, key))
-        item.thresholds = this.calculateThresholds(location, item)
+        item.thresholds = this.calculateThresholds(location, item, products)
         delete item.type
       })
 
