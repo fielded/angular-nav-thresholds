@@ -64,14 +64,14 @@ class ThresholdsService {
       index[productId] = Object.keys(weeksOfStock).reduce((productThresholds, threshold) => {
         const level = weeklyLevels[productId] * weeksOfStock[threshold]
         const product = find(products, isId.bind(null, productId))
-        if (!product || !product.presentation) {
-          return productThresholds
+        if (product && product.presentation) {
+          // TODO: product presentations should be ints, not strings
+          const presentation = parseInt(product.presentation, 10)
+          const roundedLevel = Math.ceil(level / presentation) * presentation
+          productThresholds[threshold] = roundedLevel
+        } else {
+          productThresholds[threshold] = level
         }
-        // TODO: product presentations should be ints, not strings
-        const presentation = parseInt(product.presentation, 10)
-
-        const roundedLevel = Math.ceil(level / presentation) * presentation
-        productThresholds[threshold] = roundedLevel
 
         if (location.level === 'zone' && requiredStateStoresAllocation[productId]) {
           productThresholds[threshold] += requiredStateStoresAllocation[productId]
