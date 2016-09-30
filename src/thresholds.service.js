@@ -30,13 +30,19 @@ class ThresholdsService {
   // For zones the thresholds are based on the state store required allocation for
   // the week, that information is passed as an optional param (`requiredStateStoresAllocation`).
   // That param is only used for zones.
-  calculateThresholds (location, stockCount, products, requiredStateStoresAllocation = {}) {
-    if (!location || !location.allocations || !location.plans || !location.level) {
+  calculateThresholds (location, stockCount, products, requiredStateStoresAllocation = {}, options = {}) {
+    if (!location || !location.allocations || !location.allocations.length ||
+      !location.plans || !location.plans.length || !location.level) {
       return
     }
 
-    if (!stockCount || !stockCount.allocations || !stockCount.allocations.version ||
-        !stockCount.plans || !stockCount.plans.version) {
+    if (!stockCount) {
+      return
+    }
+
+    if (options.version !== 'last' &&
+        !(stockCount.allocations && typeof stockCount.allocations.version !== undefined &&
+          stockCount.plans && typeof stockCount.plans.version !== undefined)) {
       return
     }
 
@@ -44,16 +50,29 @@ class ThresholdsService {
       return
     }
 
-    const allocation = find(location.allocations, isVersion.bind(null, stockCount.allocations.version))
+    let allocation
+    if (options.version === 'last') {
+      allocation = location.allocations[location.allocations.length - 1]
+    } else {
+      allocation = find(location.allocations, isVersion.bind(null, stockCount.allocations.version))
+    }
+
     if (!(allocation && allocation.weeklyLevels)) {
       return
     }
 
     const weeklyLevels = allocation.weeklyLevels
+
     let weeksOfStock = zonesPlan
 
     if (location.level !== 'zone') {
-      const plan = find(location.plans, isVersion.bind(null, stockCount.plans.version))
+      let plan
+      if (options.version === 'last') {
+        plan = location.plans[location.plans.length - 1]
+      } else {
+        plan = find(location.plans, isVersion.bind(null, stockCount.plans.version))
+      }
+
       if (!(plan && plan.weeksOfStock)) {
         return
       }
