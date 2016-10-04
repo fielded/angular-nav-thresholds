@@ -59,6 +59,14 @@ describe('thresholds service', function () {
           reOrder: 2,
           min: 1
         }
+      },
+      {
+        version: 2,
+        weeksOfStock: {
+          max: 10,
+          reOrder: 4,
+          min: 2
+        }
       }
     ]
   }
@@ -169,6 +177,24 @@ describe('thresholds service', function () {
         }
       }
       var actual = thresholdsService.calculateThresholds(unroundedLocation, stockCount, products)
+      expect(actual).toEqual(expected)
+    })
+    it('uses the last version of plans and allocations if { version: "last"} is passed as option', function () {
+      var expected = {
+        'product:a': {
+          min: 200,
+          reOrder: 400,
+          max: 1000,
+          targetPopulation: 1000
+        },
+        'product:b': {
+          min: 400,
+          reOrder: 800,
+          max: 2000,
+          targetPopulation: 2000
+        }
+      }
+      var actual = thresholdsService.calculateThresholds(location, stockCount, products, null, { version: 'last' })
       expect(actual).toEqual(expected)
     })
   })
