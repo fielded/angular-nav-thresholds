@@ -3,6 +3,12 @@
 
   angular$1 = 'default' in angular$1 ? angular$1['default'] : angular$1;
 
+  var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) {
+    return typeof obj;
+  } : function (obj) {
+    return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj;
+  };
+
   var classCallCheck = function (instance, Constructor) {
     if (!(instance instanceof Constructor)) {
       throw new TypeError("Cannot call a class as a function");
@@ -71,12 +77,17 @@
       key: 'calculateThresholds',
       value: function calculateThresholds(location, stockCount, products) {
         var requiredStateStoresAllocation = arguments.length <= 3 || arguments[3] === undefined ? {} : arguments[3];
+        var options = arguments.length <= 4 || arguments[4] === undefined ? {} : arguments[4];
 
-        if (!location || !location.allocations || !location.plans || !location.level) {
+        if (!location || !location.allocations || !location.allocations.length || !location.plans || !location.plans.length || !location.level) {
           return;
         }
 
-        if (!stockCount || !stockCount.allocations || !stockCount.allocations.version || !stockCount.plans || !stockCount.plans.version) {
+        if (!stockCount) {
+          return;
+        }
+
+        if (options.version !== 'last' && !(stockCount.allocations && _typeof(stockCount.allocations.version) !== undefined && stockCount.plans && _typeof(stockCount.plans.version) !== undefined)) {
           return;
         }
 
@@ -84,16 +95,29 @@
           return;
         }
 
-        var allocation = find(location.allocations, isVersion.bind(null, stockCount.allocations.version));
+        var allocation = void 0;
+        if (options.version === 'last') {
+          allocation = location.allocations[location.allocations.length - 1];
+        } else {
+          allocation = find(location.allocations, isVersion.bind(null, stockCount.allocations.version));
+        }
+
         if (!(allocation && allocation.weeklyLevels)) {
           return;
         }
 
         var weeklyLevels = allocation.weeklyLevels;
+
         var weeksOfStock = zonesPlan;
 
         if (location.level !== 'zone') {
-          var plan = find(location.plans, isVersion.bind(null, stockCount.plans.version));
+          var plan = void 0;
+          if (options.version === 'last') {
+            plan = location.plans[location.plans.length - 1];
+          } else {
+            plan = find(location.plans, isVersion.bind(null, stockCount.plans.version));
+          }
+
           if (!(plan && plan.weeksOfStock)) {
             return;
           }
