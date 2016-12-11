@@ -13,10 +13,57 @@ const isVersion = (version, item) => item.version === version
 const isId = (id, item) => item._id === id
 
 // Zones config
-const zonesPlan = {
-  min: 0,
-  reOrder: 3,
-  max: 6
+const zonePlans = {
+  weeksOfStock: {
+    min: 0,
+    reOrder: 3,
+    max: 6
+  }
+}
+
+const getFactorVersion = (stockCount, factor, options) => {
+  if (options.version === 'last') {
+    return options.version
+  }
+  if (stockCount[factor]) {
+    return stockCount[factor].version
+  }
+}
+
+const getFactor = (location, versions, version) => {
+  if (version === 'last') {
+    return versions[versions.length - 1]
+  }
+
+  return find(versions, isVersion.bind(null, version))
+}
+
+const getFactors = (stockCount, location, options) => {
+  if (!(location.allocations && location.allocations.length)) {
+    return {}
+  }
+
+  if (location.level !== 'zone' && !(location.plans && location.plans.length)) {
+    return {}
+  }
+
+  const allocationsVersion = getFactorVersion(stockCount, 'allocations', options)
+  const plansVersion = getFactorVersion(stockCount, 'plans', options)
+
+  if (typeof allocationsVersion === 'undefined' || typeof plansVersion === 'undefined') {
+    return {}
+  }
+
+  const allocation = getFactor(location, location.allocations, allocationsVersion)
+  let plans = zonePlans
+  if (location.level !== 'zone') {
+    plans = getFactor(location, location.plans, plansVersion)
+  }
+
+  return {
+    weeklyLevels: allocation && allocation.weeklyLevels,
+    weeksOfStock: plans && plans.weeksOfStock
+  }
 }
 
 class ThresholdsService {
@@ -31,18 +78,11 @@ class ThresholdsService {
   // the week, that information is passed as an optional param (`requiredStateStoresAllocation`).
   // That param is only used for zones.
   calculateThresholds (location, stockCount, products, requiredStateStoresAllocation = {}, options = {}) {
-    if (!location || !location.allocations || !location.allocations.length ||
-      !location.plans || !location.plans.length || !location.level) {
-      return
-    }
-
     if (!stockCount) {
       return
     }
 
-    if (options.version !== 'last' &&
-        !(stockCount.allocations && typeof stockCount.allocations.version !== undefined &&
-          stockCount.plans && typeof stockCount.plans.version !== undefined)) {
+    if (!location && location.level) {
       return
     }
 
@@ -50,33 +90,10 @@ class ThresholdsService {
       return
     }
 
-    let allocation
-    if (options.version === 'last') {
-      allocation = location.allocations[location.allocations.length - 1]
-    } else {
-      allocation = find(location.allocations, isVersion.bind(null, stockCount.allocations.version))
-    }
+    const { weeklyLevels, weeksOfStock } = getFactors(stockCount, location, options)
 
-    if (!(allocation && allocation.weeklyLevels)) {
+    if (!(weeklyLevels && weeksOfStock)) {
       return
-    }
-
-    const weeklyLevels = allocation.weeklyLevels
-
-    let weeksOfStock = zonesPlan
-
-    if (location.level !== 'zone') {
-      let plan
-      if (options.version === 'last') {
-        plan = location.plans[location.plans.length - 1]
-      } else {
-        plan = find(location.plans, isVersion.bind(null, stockCount.plans.version))
-      }
-
-      if (!(plan && plan.weeksOfStock)) {
-        return
-      }
-      weeksOfStock = plan.weeksOfStock
     }
 
     let thresholds = Object.keys(weeklyLevels).reduce((index, productId) => {
