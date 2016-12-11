@@ -47,14 +47,23 @@ const getFactors = (stockCount, location, options) => {
     return {}
   }
 
+  if (!(location.targetPopulation && location.targetPopulation.length)) {
+    return {}
+  }
   const allocationsVersion = getFactorVersion(stockCount, 'allocations', options)
   const plansVersion = getFactorVersion(stockCount, 'plans', options)
+  const targetPopulationVersion = getFactorVersion(stockCount, 'targetPopulation', options)
 
-  if (typeof allocationsVersion === 'undefined' || typeof plansVersion === 'undefined') {
+  if (typeof allocationsVersion === 'undefined' ||
+    typeof plansVersion === 'undefined' ||
+    typeof targetPopulationVersion === 'undefined'
+  ) {
     return {}
   }
 
   const allocation = getFactor(location, location.allocations, allocationsVersion)
+  const targetPopulation = getFactor(location, location.targetPopulation, targetPopulationVersion)
+
   let plans = zonePlans
   if (location.level !== 'zone') {
     plans = getFactor(location, location.plans, plansVersion)
@@ -62,7 +71,8 @@ const getFactors = (stockCount, location, options) => {
 
   return {
     weeklyLevels: allocation && allocation.weeklyLevels,
-    weeksOfStock: plans && plans.weeksOfStock
+    weeksOfStock: plans && plans.weeksOfStock,
+    targetPopulation: targetPopulation && targetPopulation.targetPopulation
   }
 }
 
@@ -90,9 +100,9 @@ class ThresholdsService {
       return
     }
 
-    const { weeklyLevels, weeksOfStock } = getFactors(stockCount, location, options)
+    const { weeklyLevels, weeksOfStock, targetPopulation } = getFactors(stockCount, location, options)
 
-    if (!(weeklyLevels && weeksOfStock)) {
+    if (!(weeklyLevels && weeksOfStock && targetPopulation)) {
       return
     }
 
@@ -119,9 +129,7 @@ class ThresholdsService {
         return productThresholds
       }, {})
 
-      if (location.targetPopulation) {
-        index[productId].targetPopulation = location.targetPopulation[productId]
-      }
+      index[productId].targetPopulation = targetPopulation[productId]
 
       return index
     }, {})
@@ -146,7 +154,8 @@ class ThresholdsService {
       const id = this.smartId.idify(scLocation, locationIdPattern)
       const allocations = stockCount.allocations || { version: 1 }
       const plans = stockCount.plans || { version: 1 }
-      index[id] = angular.merge({}, { allocations: allocations, plans: plans })
+      const targetPopulation = stockCount.targetPopulation || { version: 1 }
+      index[id] = angular.merge({}, { allocations: allocations, plans: plans, targetPopulation: targetPopulation })
 
       if (scLocation.lga) {
         if (!promises.lga) {
