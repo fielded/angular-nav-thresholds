@@ -25,9 +25,10 @@ const getFactorVersion = (stockCount, factor, options) => {
   if (options.version === 'last') {
     return options.version
   }
-  if (stockCount[factor]) {
-    return stockCount[factor].version
+  if (!(stockCount[factor] && stockCount[factor].version)) {
+    return 1
   }
+  return stockCount[factor].version
 }
 
 const getFactor = (location, versions, version) => {

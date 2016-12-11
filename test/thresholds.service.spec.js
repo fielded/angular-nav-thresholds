@@ -186,7 +186,7 @@ describe('thresholds service', function () {
       var actual = thresholdsService.calculateThresholds(unroundedLocation, stockCount, products)
       expect(actual).toEqual(expected)
     })
-    it('uses the last version of plans and allocations if { version: "last"} is passed as option', function () {
+    it('uses the last version of all factors if { version: "last"} is passed as option', function () {
       var expected = {
         'product:a': {
           min: 200,
@@ -202,6 +202,24 @@ describe('thresholds service', function () {
         }
       }
       var actual = thresholdsService.calculateThresholds(location, stockCount, products, null, { version: 'last' })
+      expect(actual).toEqual(expected)
+    })
+    it('uses 1 as default version for all factors if no version is provided', function () {
+      var expected = {
+        'product:a': {
+          min: 50,
+          reOrder: 100,
+          max: 250,
+          targetPopulation: 500
+        },
+        'product:b': {
+          min: 100,
+          reOrder: 200,
+          max: 500,
+          targetPopulation: 1000
+        }
+      }
+      var actual = thresholdsService.calculateThresholds(location, {}, products)
       expect(actual).toEqual(expected)
     })
   })
