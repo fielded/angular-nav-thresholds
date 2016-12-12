@@ -23,7 +23,7 @@
   ],
   "license": "Apache-2.0",
   "engines": {
-    "node": ">=5"
+    "node": ">=6"
   },
   "dependencies": {
     "angular": "1.5.8"
