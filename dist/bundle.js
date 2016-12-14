@@ -3,35 +3,9 @@
 
   angular$1 = 'default' in angular$1 ? angular$1['default'] : angular$1;
 
-  var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) {
-    return typeof obj;
-  } : function (obj) {
-    return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj;
-  };
+  var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-  var classCallCheck = function (instance, Constructor) {
-    if (!(instance instanceof Constructor)) {
-      throw new TypeError("Cannot call a class as a function");
-    }
-  };
-
-  var createClass = function () {
-    function defineProperties(target, props) {
-      for (var i = 0; i < props.length; i++) {
-        var descriptor = props[i];
-        descriptor.enumerable = descriptor.enumerable || false;
-        descriptor.configurable = true;
-        if ("value" in descriptor) descriptor.writable = true;
-        Object.defineProperty(target, descriptor.key, descriptor);
-      }
-    }
-
-    return function (Constructor, protoProps, staticProps) {
-      if (protoProps) defineProperties(Constructor.prototype, protoProps);
-      if (staticProps) defineProperties(Constructor, staticProps);
-      return Constructor;
-    };
-  }();
+  function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
   // TODO: replace with Array#find ponyfill
   var find = function find(list, match) {
@@ -52,15 +26,108 @@
   };
 
   // Zones config
-  var zonesPlan = {
-    min: 0,
-    reOrder: 3,
-    max: 6
+  var zonePlans = {
+    weeksOfStock: {
+      min: 0,
+      reOrder: 3,
+      max: 6
+    }
+  };
+
+  var getFactorVersion = function getFactorVersion(stockCount, factor, options) {
+    if (options.version === 'last') {
+      return options.version;
+    }
+    if (!(stockCount[factor] && stockCount[factor].version)) {
+      return 1;
+    }
+    return stockCount[factor].version;
+  };
+
+  var getFactor = function getFactor(location, versions, version) {
+    if (version === 'last') {
+      return versions[versions.length - 1];
+    }
+
+    return find(versions, isVersion.bind(null, version));
+  };
+
+  var getFactors = function getFactors(stockCount, location, options) {
+    // centralized for whenever we implement #16
+    var somethingIsWrong = function somethingIsWrong() {
+      return undefined;
+    };
+
+    var getWeeklyLevels = function getWeeklyLevels() {
+      if (!(location.allocations && location.allocations.length)) {
+        somethingIsWrong();
+      }
+
+      var allocationsVersion = getFactorVersion(stockCount, 'allocations', options);
+
+      if (typeof allocationsVersion === 'undefined') {
+        somethingIsWrong();
+      }
+
+      var allocations = getFactor(location, location.allocations, allocationsVersion);
+      return allocations && allocations.weeklyLevels;
+    };
+
+    var getWeeksOfStock = function getWeeksOfStock() {
+      if (location.level !== 'zone' && !(location.plans && location.plans.length)) {
+        somethingIsWrong();
+      }
+
+      var plansVersion = getFactorVersion(stockCount, 'plans', options);
+
+      if (typeof plansVersion === 'undefined') {
+        somethingIsWrong();
+      }
+
+      var plans = zonePlans;
+      if (location.level !== 'zone') {
+        plans = getFactor(location, location.plans, plansVersion);
+      }
+
+      return plans && plans.weeksOfStock;
+    };
+
+    var getMonthlyTargetPopulations = function getMonthlyTargetPopulations() {
+      var monthlyTargetPopulations = void 0;
+      if (location.targetPopulations) {
+        if (!location.targetPopulations.length) {
+          somethingIsWrong();
+        }
+        var targetPopulationVersion = getFactorVersion(stockCount, 'targetPopulations', options);
+
+        if (typeof targetPopulationVersion === 'undefined') {
+          somethingIsWrong();
+        }
+
+        var targetPopulations = getFactor(location, location.targetPopulations, targetPopulationVersion);
+        monthlyTargetPopulations = targetPopulations && targetPopulations.monthlyTargetPopulations;
+      } else {
+        // For backwards compatibility with the old style location docs,
+        // since we have no control about when the dashboards are going
+        // to replicate the new location docs
+        if (!(location.targetPopulation && location.targetPopulation.length)) {
+          somethingIsWrong();
+        }
+        monthlyTargetPopulations = location.targetPopulation;
+      }
+      return monthlyTargetPopulations;
+    };
+
+    return {
+      weeksOfStock: getWeeksOfStock(),
+      weeklyLevels: getWeeklyLevels(),
+      targetPopulations: getMonthlyTargetPopulations()
+    };
   };
 
   var ThresholdsService = function () {
     function ThresholdsService($q, smartId, lgasService, statesService) {
-      classCallCheck(this, ThresholdsService);
+      _classCallCheck(this, ThresholdsService);
 
       this.$q = $q;
       this.smartId = smartId;
@@ -73,21 +140,17 @@
     // That param is only used for zones.
 
 
-    createClass(ThresholdsService, [{
+    _createClass(ThresholdsService, [{
       key: 'calculateThresholds',
       value: function calculateThresholds(location, stockCount, products) {
-        var requiredStateStoresAllocation = arguments.length <= 3 || arguments[3] === undefined ? {} : arguments[3];
-        var options = arguments.length <= 4 || arguments[4] === undefined ? {} : arguments[4];
-
-        if (!location || !location.allocations || !location.allocations.length || !location.plans || !location.plans.length || !location.level) {
-          return;
-        }
+        var requiredStateStoresAllocation = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
+        var options = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : {};
 
         if (!stockCount) {
           return;
         }
 
-        if (options.version !== 'last' && !(stockCount.allocations && _typeof(stockCount.allocations.version) !== undefined && stockCount.plans && _typeof(stockCount.plans.version) !== undefined)) {
+        if (!location && location.level) {
           return;
         }
 
@@ -95,36 +158,16 @@
           return;
         }
 
-        var allocation = void 0;
-        if (options.version === 'last') {
-          allocation = location.allocations[location.allocations.length - 1];
-        } else {
-          allocation = find(location.allocations, isVersion.bind(null, stockCount.allocations.version));
-        }
+        var _getFactors = getFactors(stockCount, location, options),
+            weeklyLevels = _getFactors.weeklyLevels,
+            weeksOfStock = _getFactors.weeksOfStock,
+            targetPopulations = _getFactors.targetPopulations;
 
-        if (!(allocation && allocation.weeklyLevels)) {
+        if (!(weeklyLevels && weeksOfStock && targetPopulations)) {
           return;
         }
 
-        var weeklyLevels = allocation.weeklyLevels;
-
-        var weeksOfStock = zonesPlan;
-
-        if (location.level !== 'zone') {
-          var plan = void 0;
-          if (options.version === 'last') {
-            plan = location.plans[location.plans.length - 1];
-          } else {
-            plan = find(location.plans, isVersion.bind(null, stockCount.plans.version));
-          }
-
-          if (!(plan && plan.weeksOfStock)) {
-            return;
-          }
-          weeksOfStock = plan.weeksOfStock;
-        }
-
-        var thresholds = Object.keys(weeklyLevels).reduce(function (index, productId) {
+        return Object.keys(weeklyLevels).reduce(function (index, productId) {
           index[productId] = Object.keys(weeksOfStock).reduce(function (productThresholds, threshold) {
             var level = weeklyLevels[productId] * weeksOfStock[threshold];
             var product = find(products, isId.bind(null, productId));
@@ -147,14 +190,10 @@
             return productThresholds;
           }, {});
 
-          if (location.targetPopulation) {
-            index[productId].targetPopulation = location.targetPopulation[productId];
-          }
+          index[productId].targetPopulation = targetPopulations[productId];
 
           return index;
         }, {});
-
-        return thresholds;
       }
     }, {
       key: 'getThresholdsFor',
@@ -177,7 +216,12 @@
           var id = _this.smartId.idify(scLocation, locationIdPattern);
           var allocations = stockCount.allocations || { version: 1 };
           var plans = stockCount.plans || { version: 1 };
-          index[id] = angular.merge({}, { allocations: allocations, plans: plans });
+          var targetPopulations = stockCount.targetPopulations || { version: 1 };
+          index[id] = angular.merge({}, {
+            allocations: allocations,
+            plans: plans,
+            targetPopulations: targetPopulations
+          });
 
           if (scLocation.lga) {
             if (!promises.lga) {
@@ -208,6 +252,7 @@
         return this.$q.all(promises).then(addThresholds);
       }
     }]);
+
     return ThresholdsService;
   }();
 
