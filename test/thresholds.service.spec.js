@@ -222,6 +222,30 @@ describe('thresholds service', function () {
       var actual = thresholdsService.calculateThresholds(location, {}, products)
       expect(actual).toEqual(expected)
     })
+    it('still works if the location doc contains a non versioned targetPopulation field', function () {
+      var oldStyleTargetPopulations = {
+        'product:a': 500,
+        'product:b': 1000
+      }
+      var oldStyleLocation = angular.extend({}, location, { targetPopulation: oldStyleTargetPopulations })
+      delete oldStyleLocation.targetPopulations
+      var expected = {
+        'product:a': {
+          min: 50,
+          reOrder: 100,
+          max: 250,
+          targetPopulation: 500
+        },
+        'product:b': {
+          min: 100,
+          reOrder: 200,
+          max: 500,
+          targetPopulation: 1000
+        }
+      }
+      var actual = thresholdsService.calculateThresholds(oldStyleLocation, {}, products)
+      expect(actual).toEqual(expected)
+    })
   })
 
   describe('getThresholdsFor', function () {

@@ -40,40 +40,73 @@ const getFactor = (location, versions, version) => {
 }
 
 const getFactors = (stockCount, location, options) => {
-  if (!(location.allocations && location.allocations.length)) {
-    return {}
+  // centralized for whenever we implement #16
+  const somethingIsWrong = () => undefined
+
+  const getWeeklyLevels = () => {
+    if (!(location.allocations && location.allocations.length)) {
+      somethingIsWrong()
+    }
+
+    const allocationsVersion = getFactorVersion(stockCount, 'allocations', options)
+
+    if (typeof allocationsVersion === 'undefined') {
+      somethingIsWrong()
+    }
+
+    const allocations = getFactor(location, location.allocations, allocationsVersion)
+    return allocations && allocations.weeklyLevels
   }
 
-  if (location.level !== 'zone' && !(location.plans && location.plans.length)) {
-    return {}
+  const getWeeksOfStock = () => {
+    if (location.level !== 'zone' && !(location.plans && location.plans.length)) {
+      somethingIsWrong()
+    }
+
+    const plansVersion = getFactorVersion(stockCount, 'plans', options)
+
+    if (typeof plansVersion === 'undefined') {
+      somethingIsWrong()
+    }
+
+    let plans = zonePlans
+    if (location.level !== 'zone') {
+      plans = getFactor(location, location.plans, plansVersion)
+    }
+
+    return plans && plans.weeksOfStock
   }
 
-  if (!(location.targetPopulations && location.targetPopulations.length)) {
-    return {}
-  }
-  const allocationsVersion = getFactorVersion(stockCount, 'allocations', options)
-  const plansVersion = getFactorVersion(stockCount, 'plans', options)
-  const targetPopulationVersion = getFactorVersion(stockCount, 'targetPopulations', options)
+  const getMonthlyTargetPopulations = () => {
+    let monthlyTargetPopulations
+    if (location.targetPopulations) {
+      if (!location.targetPopulations.length) {
+        somethingIsWrong()
+      }
+      const targetPopulationVersion = getFactorVersion(stockCount, 'targetPopulations', options)
 
-  if (typeof allocationsVersion === 'undefined' ||
-    typeof plansVersion === 'undefined' ||
-    typeof targetPopulationVersion === 'undefined'
-  ) {
-    return {}
-  }
+      if (typeof targetPopulationVersion === 'undefined') {
+        somethingIsWrong()
+      }
 
-  const allocations = getFactor(location, location.allocations, allocationsVersion)
-  const targetPopulations = getFactor(location, location.targetPopulations, targetPopulationVersion)
-
-  let plans = zonePlans
-  if (location.level !== 'zone') {
-    plans = getFactor(location, location.plans, plansVersion)
+      const targetPopulations = getFactor(location, location.targetPopulations, targetPopulationVersion)
+      monthlyTargetPopulations = targetPopulations && targetPopulations.monthlyTargetPopulations
+    } else {
+      // For backwards compatibility with the old style location docs,
+      // since we have no control about when the dashboards are going
+      // to replicate the new location docs
+      if (!(location.targetPopulation && location.targetPopulation.length)) {
+        somethingIsWrong()
+      }
+      monthlyTargetPopulations = location.targetPopulation
+    }
+    return monthlyTargetPopulations
   }
 
   return {
-    weeklyLevels: allocations && allocations.weeklyLevels,
-    weeksOfStock: plans && plans.weeksOfStock,
-    targetPopulations: targetPopulations && targetPopulations.monthlyTargetPopulations
+    weeksOfStock: getWeeksOfStock(),
+    weeklyLevels: getWeeklyLevels(),
+    targetPopulations: getMonthlyTargetPopulations()
   }
 }
 
@@ -107,7 +140,7 @@ class ThresholdsService {
       return
     }
 
-    let thresholds = Object.keys(weeklyLevels).reduce((index, productId) => {
+    return Object.keys(weeklyLevels).reduce((index, productId) => {
       index[productId] = Object.keys(weeksOfStock).reduce((productThresholds, threshold) => {
         const level = weeklyLevels[productId] * weeksOfStock[threshold]
         const product = find(products, isId.bind(null, productId))
@@ -134,8 +167,6 @@ class ThresholdsService {
 
       return index
     }, {})
-
-    return thresholds
   }
 
   getThresholdsFor (stockCounts, products) {
