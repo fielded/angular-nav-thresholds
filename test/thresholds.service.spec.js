@@ -47,10 +47,22 @@ describe('thresholds service', function () {
         }
       }
     ],
-    targetPopulation: {
-      'product:a': 1000,
-      'product:b': 2000
-    },
+    targetPopulations: [
+      {
+        version: 1,
+        monthlyTargetPopulations: {
+          'product:a': 500,
+          'product:b': 1000
+        }
+      },
+      {
+        version: 2,
+        monthlyTargetPopulations: {
+          'product:a': 1000,
+          'product:b': 2000
+        }
+      }
+    ],
     plans: [
       {
         version: 1,
@@ -73,14 +85,9 @@ describe('thresholds service', function () {
 
   var stockCount = {
     allocations: { version: 2 },
-    plans: { version: 1 }
+    plans: { version: 1 },
+    targetPopulations: { version: 2 }
   }
-
-  var stockCounts = [
-    // { location: { zone: 'nc' }, allocations: { version: 2 }, plans: { version: 1 } },
-    { location: { zone: 'nc', state: 'kogi' }, allocations: { version: 2 }, plans: { version: 1 } },
-    { location: { zone: 'nc', state: 'kogi', lga: 'adavi' } }
-  ]
 
   var products = [
     // TODO: presentation should be ints
@@ -179,7 +186,7 @@ describe('thresholds service', function () {
       var actual = thresholdsService.calculateThresholds(unroundedLocation, stockCount, products)
       expect(actual).toEqual(expected)
     })
-    it('uses the last version of plans and allocations if { version: "last"} is passed as option', function () {
+    it('uses the last version of all factors if { version: "last"} is passed as option', function () {
       var expected = {
         'product:a': {
           min: 200,
@@ -197,10 +204,57 @@ describe('thresholds service', function () {
       var actual = thresholdsService.calculateThresholds(location, stockCount, products, null, { version: 'last' })
       expect(actual).toEqual(expected)
     })
+    it('uses 1 as default version for all factors if no version is provided', function () {
+      var expected = {
+        'product:a': {
+          min: 50,
+          reOrder: 100,
+          max: 250,
+          targetPopulation: 500
+        },
+        'product:b': {
+          min: 100,
+          reOrder: 200,
+          max: 500,
+          targetPopulation: 1000
+        }
+      }
+      var actual = thresholdsService.calculateThresholds(location, {}, products)
+      expect(actual).toEqual(expected)
+    })
+    it('still works if the location doc contains a non versioned targetPopulation field', function () {
+      var oldStyleTargetPopulations = {
+        'product:a': 500,
+        'product:b': 1000
+      }
+      var oldStyleLocation = angular.extend({}, location, { targetPopulation: oldStyleTargetPopulations })
+      delete oldStyleLocation.targetPopulations
+      var expected = {
+        'product:a': {
+          min: 50,
+          reOrder: 100,
+          max: 250,
+          targetPopulation: 500
+        },
+        'product:b': {
+          min: 100,
+          reOrder: 200,
+          max: 500,
+          targetPopulation: 1000
+        }
+      }
+      var actual = thresholdsService.calculateThresholds(oldStyleLocation, {}, products)
+      expect(actual).toEqual(expected)
+    })
   })
 
   describe('getThresholdsFor', function () {
     it('takes an array of objects with location, allocations and plans fields and returns an object of location thresholds', function (done) {
+      var stockCounts = [
+        // { location: { zone: 'nc' }, allocations: { version: 2 }, plans: { version: 1 } },
+        { location: { zone: 'nc', state: 'kogi' }, allocations: { version: 2 }, plans: { version: 1 }, targetPopulations: { version: 2 } },
+        { location: { zone: 'nc', state: 'kogi', lga: 'adavi' } }
+      ]
       var expected = {
         // 'zone:nc': {
           // thresholds: {
@@ -211,6 +265,7 @@ describe('thresholds service', function () {
         'zone:nc:state:kogi': {
           allocations: { version: 2 },
           plans: { version: 1 },
+          targetPopulations: { version: 2 },
           thresholds: {
             'product:a': { min: 100, reOrder: 200, max: 500, targetPopulation: 1000 },
             'product:b': { min: 200, reOrder: 400, max: 1000, targetPopulation: 2000 }
@@ -219,9 +274,10 @@ describe('thresholds service', function () {
         'zone:nc:state:kogi:lga:adavi': {
           allocations: { version: 1 },
           plans: { version: 1 },
+          targetPopulations: { version: 1 },
           thresholds: {
-            'product:a': { min: 50, reOrder: 100, max: 250, targetPopulation: 1000 },
-            'product:b': { min: 100, reOrder: 200, max: 500, targetPopulation: 2000 }
+            'product:a': { min: 50, reOrder: 100, max: 250, targetPopulation: 500 },
+            'product:b': { min: 100, reOrder: 200, max: 500, targetPopulation: 1000 }
           }
         }
       }
