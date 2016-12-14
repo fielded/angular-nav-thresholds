@@ -83,6 +83,18 @@ describe('thresholds service', function () {
     ]
   }
 
+  var getZoneLocation = function () {
+    var plans = [{
+      version: 1,
+      weeksOfStock: {
+        min: 0,
+        reOrder: 3,
+        max: 6
+      }
+    }]
+    return angular.extend({}, location, { level: 'zone', plans: plans })
+  }
+
   var stockCount = {
     allocations: { version: 2 },
     plans: { version: 1 },
@@ -115,7 +127,6 @@ describe('thresholds service', function () {
       expect(actual).toEqual(expected)
     })
     it('also works with zones', function () {
-      var zone = angular.extend({}, location, { level: 'zone' })
       // Note: `plans.weeksOfStock` is ignored (at least for now) in the case of zone stores
       // See https://github.com/fielded/angular-nav-thresholds/issues/9
       var expected = {
@@ -132,13 +143,10 @@ describe('thresholds service', function () {
           targetPopulation: 2000
         }
       }
-      var actual = thresholdsService.calculateThresholds(zone, stockCount, products)
+      var actual = thresholdsService.calculateThresholds(getZoneLocation(), stockCount, products)
       expect(actual).toEqual(expected)
     })
     it('works with zones if there is a required allocation for zone state stores', function () {
-      var zone = angular.extend({}, location, { level: 'zone' })
-      // Note: `plans.weeksOfStock` is ignored (at least for now) in the case of zone stores
-      // See https://github.com/fielded/angular-nav-thresholds/issues/9
       var requiredStatesStoresAllocation = { 'product:a': 20 }
       var expected = {
         'product:a': {
@@ -154,7 +162,7 @@ describe('thresholds service', function () {
           targetPopulation: 2000
         }
       }
-      var actual = thresholdsService.calculateThresholds(zone, stockCount, products, requiredStatesStoresAllocation)
+      var actual = thresholdsService.calculateThresholds(getZoneLocation(), stockCount, products, requiredStatesStoresAllocation)
       expect(actual).toEqual(expected)
     })
     it('rounds allocations up to the product presentation', function () {
