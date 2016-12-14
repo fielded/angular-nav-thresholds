@@ -12,15 +12,6 @@ const isVersion = (version, item) => item.version === version
 
 const isId = (id, item) => item._id === id
 
-// Zones config
-const zonePlans = {
-  weeksOfStock: {
-    min: 0,
-    reOrder: 3,
-    max: 6
-  }
-}
-
 const getFactorVersion = (stockCount, factor, options) => {
   if (options.version === 'last') {
     return options.version
@@ -59,7 +50,7 @@ const getFactors = (stockCount, location, options) => {
   }
 
   const getWeeksOfStock = () => {
-    if (location.level !== 'zone' && !(location.plans && location.plans.length)) {
+    if (!(location.plans && location.plans.length)) {
       somethingIsWrong()
     }
 
@@ -69,10 +60,7 @@ const getFactors = (stockCount, location, options) => {
       somethingIsWrong()
     }
 
-    let plans = zonePlans
-    if (location.level !== 'zone') {
-      plans = getFactor(location, location.plans, plansVersion)
-    }
+    const plans = getFactor(location, location.plans, plansVersion)
 
     return plans && plans.weeksOfStock
   }
