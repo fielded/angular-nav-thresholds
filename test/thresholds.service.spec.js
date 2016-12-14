@@ -47,17 +47,17 @@ describe('thresholds service', function () {
         }
       }
     ],
-    targetPopulation: [
+    targetPopulations: [
       {
         version: 1,
-        targetPopulation: {
+        monthlyTargetPopulations: {
           'product:a': 500,
           'product:b': 1000
         }
       },
       {
         version: 2,
-        targetPopulation: {
+        monthlyTargetPopulations: {
           'product:a': 1000,
           'product:b': 2000
         }
@@ -86,7 +86,7 @@ describe('thresholds service', function () {
   var stockCount = {
     allocations: { version: 2 },
     plans: { version: 1 },
-    targetPopulation: { version: 2 }
+    targetPopulations: { version: 2 }
   }
 
   var products = [
@@ -228,7 +228,7 @@ describe('thresholds service', function () {
     it('takes an array of objects with location, allocations and plans fields and returns an object of location thresholds', function (done) {
       var stockCounts = [
         // { location: { zone: 'nc' }, allocations: { version: 2 }, plans: { version: 1 } },
-        { location: { zone: 'nc', state: 'kogi' }, allocations: { version: 2 }, plans: { version: 1 }, targetPopulation: { version: 2 } },
+        { location: { zone: 'nc', state: 'kogi' }, allocations: { version: 2 }, plans: { version: 1 }, targetPopulations: { version: 2 } },
         { location: { zone: 'nc', state: 'kogi', lga: 'adavi' } }
       ]
       var expected = {
@@ -241,7 +241,7 @@ describe('thresholds service', function () {
         'zone:nc:state:kogi': {
           allocations: { version: 2 },
           plans: { version: 1 },
-          targetPopulation: { version: 2 },
+          targetPopulations: { version: 2 },
           thresholds: {
             'product:a': { min: 100, reOrder: 200, max: 500, targetPopulation: 1000 },
             'product:b': { min: 200, reOrder: 400, max: 1000, targetPopulation: 2000 }
@@ -250,7 +250,7 @@ describe('thresholds service', function () {
         'zone:nc:state:kogi:lga:adavi': {
           allocations: { version: 1 },
           plans: { version: 1 },
-          targetPopulation: { version: 1 },
+          targetPopulations: { version: 1 },
           thresholds: {
             'product:a': { min: 50, reOrder: 100, max: 250, targetPopulation: 500 },
             'product:b': { min: 100, reOrder: 200, max: 500, targetPopulation: 1000 }
