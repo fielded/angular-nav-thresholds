@@ -134,27 +134,26 @@ describe('thresholds service', function () {
       var actual = thresholdsService.calculateThresholds(location, stockCount, products)
       expect(actual).toEqual(expected)
     })
-    it('also works with zones', function () {
-      // Note: `plans.weeksOfStock` is ignored (at least for now) in the case of zone stores
-      // See https://github.com/fielded/angular-nav-thresholds/issues/9
-      var expected = {
+    it('defaults to the oldest factor version if the doc is to old to have a matching one', function () {
+      var stockCount = { date: { year: 2014, week: 1 } }
+      var expected = { // all versions defaulting to 1
         'product:a': {
-          min: 0,
-          reOrder: 300,
-          max: 600,
-          targetPopulation: 1000
+          min: 50,
+          reOrder: 100,
+          max: 250,
+          targetPopulation: 500
         },
         'product:b': {
-          min: 0,
-          reOrder: 600,
-          max: 1200,
-          targetPopulation: 2000
+          min: 100,
+          reOrder: 200,
+          max: 500,
+          targetPopulation: 1000
         }
       }
-      var actual = thresholdsService.calculateThresholds(getZoneLocation(), stockCount, products)
+      var actual = thresholdsService.calculateThresholds(location, stockCount, products)
       expect(actual).toEqual(expected)
     })
-    it('works with zones if there is a required allocation for zone state stores', function () {
+    it('works for zones when a required allocation for zone state stores is provided', function () {
       var requiredStatesStoresAllocation = { 'product:a': 20 }
       var expected = {
         'product:a': {
@@ -171,6 +170,24 @@ describe('thresholds service', function () {
         }
       }
       var actual = thresholdsService.calculateThresholds(getZoneLocation(), stockCount, products, requiredStatesStoresAllocation)
+      expect(actual).toEqual(expected)
+    })
+    it('works for zones when no required allocations are provided', function () {
+      var expected = {
+        'product:a': {
+          min: 0,
+          reOrder: 300,
+          max: 600,
+          targetPopulation: 1000
+        },
+        'product:b': {
+          min: 0,
+          reOrder: 600,
+          max: 1200,
+          targetPopulation: 2000
+        }
+      }
+      var actual = thresholdsService.calculateThresholds(getZoneLocation(), stockCount, products)
       expect(actual).toEqual(expected)
     })
     it('rounds allocations up to the product presentation', function () {

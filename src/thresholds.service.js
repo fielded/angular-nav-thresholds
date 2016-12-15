@@ -21,7 +21,12 @@ const isId = (id, item) => item._id === id
 
 const getFactor = (versions, date) => {
   const reverseVersions = versions.slice(0).reverse()
-  return find(reverseVersions, isVersion.bind(null, date))
+  const factor = find(reverseVersions, isVersion.bind(null, date))
+  // If the doc is too old to have a matching version, default to the oldest one
+  if (!factor) {
+    return versions[0]
+  }
+  return factor
 }
 
 const getFactors = (stockCount, location) => {
