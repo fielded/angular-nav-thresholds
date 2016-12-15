@@ -1,3 +1,6 @@
+/* global moment:false */
+import config from './config/config.json'
+
 // TODO: replace with Array#find ponyfill
 const find = (list, match) => {
   for (let i = 0; i < list.length; i++) {
@@ -8,29 +11,20 @@ const find = (list, match) => {
   return undefined
 }
 
-const isVersion = (version, item) => item.version === version
+const isVersion = (date, version) => {
+  const momentDate = moment().isoWeekYear(date.year).isoWeek(date.week).isoWeekday(1).startOf('day')
+  const momentVersionStartDate = moment(version.date, config.versionDateFormat).startOf('isoWeek').startOf('day')
+  return momentDate.isSameOrAfter(momentVersionStartDate)
+}
 
 const isId = (id, item) => item._id === id
 
-const getFactorVersion = (stockCount, factor, options) => {
-  if (options.version === 'last') {
-    return options.version
-  }
-  if (!(stockCount[factor] && stockCount[factor].version)) {
-    return 1
-  }
-  return stockCount[factor].version
+const getFactor = (versions, date) => {
+  const reverseVersions = versions.slice(0).reverse()
+  return find(reverseVersions, isVersion.bind(null, date))
 }
 
-const getFactor = (location, versions, version) => {
-  if (version === 'last') {
-    return versions[versions.length - 1]
-  }
-
-  return find(versions, isVersion.bind(null, version))
-}
-
-const getFactors = (stockCount, location, options) => {
+const getFactors = (stockCount, location) => {
   // centralized for whenever we implement #16
   const somethingIsWrong = () => undefined
 
@@ -39,13 +33,7 @@ const getFactors = (stockCount, location, options) => {
       somethingIsWrong()
     }
 
-    const allocationsVersion = getFactorVersion(stockCount, 'allocations', options)
-
-    if (typeof allocationsVersion === 'undefined') {
-      somethingIsWrong()
-    }
-
-    const allocations = getFactor(location, location.allocations, allocationsVersion)
+    const allocations = getFactor(location.allocations, stockCount.date)
     return allocations && allocations.weeklyLevels
   }
 
@@ -54,14 +42,7 @@ const getFactors = (stockCount, location, options) => {
       somethingIsWrong()
     }
 
-    const plansVersion = getFactorVersion(stockCount, 'plans', options)
-
-    if (typeof plansVersion === 'undefined') {
-      somethingIsWrong()
-    }
-
-    const plans = getFactor(location, location.plans, plansVersion)
-
+    const plans = getFactor(location.plans, stockCount.date)
     return plans && plans.weeksOfStock
   }
 
@@ -71,13 +52,8 @@ const getFactors = (stockCount, location, options) => {
       if (!location.targetPopulations.length) {
         somethingIsWrong()
       }
-      const targetPopulationVersion = getFactorVersion(stockCount, 'targetPopulations', options)
 
-      if (typeof targetPopulationVersion === 'undefined') {
-        somethingIsWrong()
-      }
-
-      const targetPopulations = getFactor(location, location.targetPopulations, targetPopulationVersion)
+      const targetPopulations = getFactor(location.targetPopulations, stockCount.date)
       monthlyTargetPopulations = targetPopulations && targetPopulations.monthlyTargetPopulations
     } else {
       // For backwards compatibility with the old style location docs,
@@ -109,8 +85,8 @@ class ThresholdsService {
   // For zones the thresholds are based on the state store required allocation for
   // the week, that information is passed as an optional param (`requiredStateStoresAllocation`).
   // That param is only used for zones.
-  calculateThresholds (location, stockCount, products, requiredStateStoresAllocation = {}, options = {}) {
-    if (!stockCount) {
+  calculateThresholds (location, stockCount, products, requiredStateStoresAllocation = {}) {
+    if (!(stockCount && stockCount.date)) {
       return
     }
 
@@ -122,7 +98,7 @@ class ThresholdsService {
       return
     }
 
-    const { weeklyLevels, weeksOfStock, targetPopulations } = getFactors(stockCount, location, options)
+    const { weeklyLevels, weeksOfStock, targetPopulations } = getFactors(stockCount, location)
 
     if (!(weeklyLevels && weeksOfStock && targetPopulations)) {
       return
@@ -172,14 +148,7 @@ class ThresholdsService {
       }
 
       const id = this.smartId.idify(scLocation, locationIdPattern)
-      const allocations = stockCount.allocations || { version: 1 }
-      const plans = stockCount.plans || { version: 1 }
-      const targetPopulations = stockCount.targetPopulations || { version: 1 }
-      index[id] = angular.merge({}, {
-        allocations,
-        plans,
-        targetPopulations
-      })
+      index[id] = { date: stockCount.date }
 
       if (scLocation.lga) {
         if (!promises.lga) {

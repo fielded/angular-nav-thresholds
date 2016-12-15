@@ -34,6 +34,7 @@ describe('thresholds service', function () {
     level: 'lga',
     allocations: [
       { version: 1,
+        date: '2016-01-06', // ISO week: 2016-W01
         weeklyLevels: {
           'product:a': 50,
           'product:b': 100
@@ -41,6 +42,7 @@ describe('thresholds service', function () {
       },
       {
         version: 2,
+        date: '2016-01-15', // ISO week: 2016-W02
         weeklyLevels: {
           'product:a': 100,
           'product:b': 200
@@ -50,6 +52,7 @@ describe('thresholds service', function () {
     targetPopulations: [
       {
         version: 1,
+        date: '2016-01-06', // ISO week: 2016-W01
         monthlyTargetPopulations: {
           'product:a': 500,
           'product:b': 1000
@@ -57,6 +60,7 @@ describe('thresholds service', function () {
       },
       {
         version: 2,
+        date: '2016-01-15', // ISO week: 2016-W02
         monthlyTargetPopulations: {
           'product:a': 1000,
           'product:b': 2000
@@ -66,6 +70,7 @@ describe('thresholds service', function () {
     plans: [
       {
         version: 1,
+        date: '2016-01-06', // ISO week: 2016-W01
         weeksOfStock: {
           max: 5,
           reOrder: 2,
@@ -74,6 +79,7 @@ describe('thresholds service', function () {
       },
       {
         version: 2,
+        date: '2016-01-20', // ISO week: 2016-W03
         weeksOfStock: {
           max: 10,
           reOrder: 4,
@@ -86,6 +92,7 @@ describe('thresholds service', function () {
   var getZoneLocation = function () {
     var plans = [{
       version: 1,
+      date: '2016-01-06', // ISO week: 2016-W01
       weeksOfStock: {
         min: 0,
         reOrder: 3,
@@ -95,10 +102,11 @@ describe('thresholds service', function () {
     return angular.extend({}, location, { level: 'zone', plans: plans })
   }
 
-  var stockCount = {
-    allocations: { version: 2 },
-    plans: { version: 1 },
-    targetPopulations: { version: 2 }
+  var stockCount = { // plans: version 1, targetPopulations: version 2, allocations: version 2
+    date: {
+      year: 2016,
+      week: 2
+    }
   }
 
   var products = [
@@ -170,6 +178,7 @@ describe('thresholds service', function () {
         allocations: [
           {
             version: 2,
+            date: '2016-01-15', // ISO week: 2016-W02
             weeklyLevels: {
               'product:a': 99.141592,
               'product:b': 43.892
@@ -194,43 +203,8 @@ describe('thresholds service', function () {
       var actual = thresholdsService.calculateThresholds(unroundedLocation, stockCount, products)
       expect(actual).toEqual(expected)
     })
-    it('uses the last version of all factors if { version: "last"} is passed as option', function () {
-      var expected = {
-        'product:a': {
-          min: 200,
-          reOrder: 400,
-          max: 1000,
-          targetPopulation: 1000
-        },
-        'product:b': {
-          min: 400,
-          reOrder: 800,
-          max: 2000,
-          targetPopulation: 2000
-        }
-      }
-      var actual = thresholdsService.calculateThresholds(location, stockCount, products, null, { version: 'last' })
-      expect(actual).toEqual(expected)
-    })
-    it('uses 1 as default version for all factors if no version is provided', function () {
-      var expected = {
-        'product:a': {
-          min: 50,
-          reOrder: 100,
-          max: 250,
-          targetPopulation: 500
-        },
-        'product:b': {
-          min: 100,
-          reOrder: 200,
-          max: 500,
-          targetPopulation: 1000
-        }
-      }
-      var actual = thresholdsService.calculateThresholds(location, {}, products)
-      expect(actual).toEqual(expected)
-    })
     it('still works if the location doc contains a non versioned targetPopulation field', function () {
+      var stockCount = { date: { year: 2016, week: 1 } }
       var oldStyleTargetPopulations = {
         'product:a': 500,
         'product:b': 1000
@@ -251,38 +225,27 @@ describe('thresholds service', function () {
           targetPopulation: 1000
         }
       }
-      var actual = thresholdsService.calculateThresholds(oldStyleLocation, {}, products)
+      var actual = thresholdsService.calculateThresholds(oldStyleLocation, stockCount, products)
       expect(actual).toEqual(expected)
     })
   })
 
   describe('getThresholdsFor', function () {
     it('takes an array of objects with location, allocations and plans fields and returns an object of location thresholds', function (done) {
-      var stockCounts = [
-        // { location: { zone: 'nc' }, allocations: { version: 2 }, plans: { version: 1 } },
-        { location: { zone: 'nc', state: 'kogi' }, allocations: { version: 2 }, plans: { version: 1 }, targetPopulations: { version: 2 } },
-        { location: { zone: 'nc', state: 'kogi', lga: 'adavi' } }
+      var stockCounts = [ // Note: it doesn't work yet with zones
+        { location: { zone: 'nc', state: 'kogi' }, date: { year: 2016, week: 2 } },
+        { location: { zone: 'nc', state: 'kogi', lga: 'adavi' }, date: { year: 2016, week: 1 } }
       ]
       var expected = {
-        // 'zone:nc': {
-          // thresholds: {
-            // 'product:a': { min: 100, reOrder: 200, max: 500 },
-            // 'product:b': { min: 200, reOrder: 400, max: 1000 }
-          // }
-        // },
         'zone:nc:state:kogi': {
-          allocations: { version: 2 },
-          plans: { version: 1 },
-          targetPopulations: { version: 2 },
+          date: { year: 2016, week: 2 },
           thresholds: {
             'product:a': { min: 100, reOrder: 200, max: 500, targetPopulation: 1000 },
             'product:b': { min: 200, reOrder: 400, max: 1000, targetPopulation: 2000 }
           }
         },
         'zone:nc:state:kogi:lga:adavi': {
-          allocations: { version: 1 },
-          plans: { version: 1 },
-          targetPopulations: { version: 1 },
+          date: { year: 2016, week: 1 },
           thresholds: {
             'product:a': { min: 50, reOrder: 100, max: 250, targetPopulation: 500 },
             'product:b': { min: 100, reOrder: 200, max: 500, targetPopulation: 1000 }
