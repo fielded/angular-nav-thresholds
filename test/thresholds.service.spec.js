@@ -220,7 +220,7 @@ describe('thresholds service', function () {
       var actual = thresholdsService.calculateThresholds(unroundedLocation, stockCount, products)
       expect(actual).toEqual(expected)
     })
-    it('still works if the location doc contains a non versioned targetPopulation field', function () {
+    it('still works if the location doc contains a non versioned targetPopulation field (instead of targetPopulations)', function () {
       var stockCount = { date: { year: 2016, week: 1 } }
       var oldStyleTargetPopulations = {
         'product:a': 500,
@@ -240,6 +240,25 @@ describe('thresholds service', function () {
           reOrder: 200,
           max: 500,
           targetPopulation: 1000
+        }
+      }
+      var actual = thresholdsService.calculateThresholds(oldStyleLocation, stockCount, products)
+      expect(actual).toEqual(expected)
+    })
+    it('still works if the location doc has no targetPopulation or targetPopulations field', function () {
+      var stockCount = { date: { year: 2016, week: 1 } }
+      var oldStyleLocation = angular.copy(location)
+      delete oldStyleLocation.targetPopulations
+      var expected = {
+        'product:a': {
+          min: 50,
+          reOrder: 100,
+          max: 250
+        },
+        'product:b': {
+          min: 100,
+          reOrder: 200,
+          max: 500
         }
       }
       var actual = thresholdsService.calculateThresholds(oldStyleLocation, stockCount, products)

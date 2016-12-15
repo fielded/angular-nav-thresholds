@@ -105,7 +105,7 @@ class ThresholdsService {
 
     const { weeklyLevels, weeksOfStock, targetPopulations } = getFactors(stockCount, location)
 
-    if (!(weeklyLevels && weeksOfStock && targetPopulations)) {
+    if (!(weeklyLevels && weeksOfStock)) {
       return
     }
 
@@ -132,7 +132,9 @@ class ThresholdsService {
         return productThresholds
       }, {})
 
-      index[productId].targetPopulation = targetPopulations[productId]
+      if (targetPopulations) { // old (and new?) zone docs have no target population doc
+        index[productId].targetPopulation = targetPopulations[productId]
+      }
 
       return index
     }, {})
