@@ -90,11 +90,11 @@ class ThresholdsService {
       return
     }
 
-    if (!location && location.level) {
+    if (!(location && location.level)) {
       return
     }
 
-    if (!products || !products.length) {
+    if (!(products && products.length)) {
       return
     }
 
