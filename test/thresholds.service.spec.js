@@ -10,13 +10,13 @@ describe('thresholds service', function () {
     angularNavDataMock = angular.module('angularNavData', [])
       .service('lgasService', function ($q) {
         this.list = function () {
-          var lga = angular.merge({ _id: 'zone:nc:state:kogi:lga:adavi' }, location)
+          var lga = angular.extend({}, factors, { _id: 'zone:nc:state:kogi:lga:adavi', level: 'lga' })
           return $q.when([lga])
         }
       })
       .service('statesService', function ($q) {
         this.list = function () {
-          var state = angular.merge({ _id: 'zone:nc:state:kogi' }, location)
+          var state = angular.extend({}, factors, { _id: 'zone:nc:state:kogi', level: 'state' })
           return $q.when([state])
         }
       })
@@ -30,8 +30,7 @@ describe('thresholds service', function () {
     $rootScope = _$rootScope_
   }))
 
-  var location = {
-    level: 'lga',
+  var factors = {
     allocations: [
       { version: 1,
         date: '2016-01-06', // ISO week: 2016-W01
@@ -89,109 +88,87 @@ describe('thresholds service', function () {
     ]
   }
 
-  var getZoneLocation = function () {
-    var plans = [{
-      version: 1,
-      date: '2016-01-06', // ISO week: 2016-W01
-      weeksOfStock: {
-        min: 0,
-        reOrder: 3,
-        max: 6
-      }
-    }]
-    return angular.extend({}, location, { level: 'zone', plans: plans })
-  }
-
-  var stockCount = { // plans: version 1, targetPopulations: version 2, allocations: version 2
-    date: {
-      year: 2016,
-      week: 2
-    }
-  }
-
   var products = [
     // TODO: presentation should be ints
     { _id: 'product:a', presentation: '10' },
     { _id: 'product:b', presentation: '2' }
   ]
 
+  function getLocation (level) {
+    return angular.extend({}, factors, { level: level })
+  }
+
+  function expectedThresholdsFor (versions) {
+    return products.reduce(function (index, product) {
+      index[product._id] = Object.keys(versions.plans.weeksOfStock).reduce(function (thresholds, key) {
+        thresholds[key] = versions.plans.weeksOfStock[key] * versions.allocations.weeklyLevels[product._id]
+        return thresholds
+      }, {})
+      index[product._id].targetPopulation = versions.targetPopulations.monthlyTargetPopulations[product._id]
+      return index
+    }, {})
+  }
+
   describe('calculateThresholds', function () {
     it('takes a location and a stockCount and returns the min, reOrder, max thresholds', function () {
-      var expected = {
-        'product:a': {
-          min: 100,
-          reOrder: 200,
-          max: 500,
-          targetPopulation: 1000
-        },
-        'product:b': {
-          min: 200,
-          reOrder: 400,
-          max: 1000,
-          targetPopulation: 2000
-        }
+      // plans: version 1, targetPopulations: version 2, allocations: version 2
+      var stockCount = { date: { year: 2016, week: 2 } }
+      var versions = {
+        plans: factors.plans[0],
+        allocations: factors.allocations[1],
+        targetPopulations: factors.targetPopulations[1]
       }
-      var actual = thresholdsService.calculateThresholds(location, stockCount, products)
+      var expected = expectedThresholdsFor(versions)
+      var actual = thresholdsService.calculateThresholds(getLocation('lga'), stockCount, products)
       expect(actual).toEqual(expected)
     })
-    it('defaults to the oldest factor version if the doc is to old to have a matching one', function () {
+    it('defaults to the oldest factor version if the doc is too old to have a matching one', function () {
       var stockCount = { date: { year: 2014, week: 1 } }
-      var expected = { // all versions defaulting to 1
-        'product:a': {
-          min: 50,
-          reOrder: 100,
-          max: 250,
-          targetPopulation: 500
-        },
-        'product:b': {
-          min: 100,
-          reOrder: 200,
-          max: 500,
-          targetPopulation: 1000
-        }
+      var versions = {
+        plans: factors.plans[0],
+        allocations: factors.allocations[0],
+        targetPopulations: factors.targetPopulations[0]
       }
-      var actual = thresholdsService.calculateThresholds(location, stockCount, products)
+      var expected = expectedThresholdsFor(versions)
+      var actual = thresholdsService.calculateThresholds(getLocation('lga'), stockCount, products)
       expect(actual).toEqual(expected)
     })
     it('works for zones when a required allocation for zone state stores is provided', function () {
+      // plans: version 1, targetPopulations: version 2, allocations: version 2
+      var stockCount = { date: { year: 2016, week: 2 } }
       var requiredStatesStoresAllocation = { 'product:a': 20 }
-      var expected = {
-        'product:a': {
-          min: 20,
-          reOrder: 320,
-          max: 620,
-          targetPopulation: 1000
-        },
-        'product:b': {
-          min: 0,
-          reOrder: 600,
-          max: 1200,
-          targetPopulation: 2000
-        }
+      var versions = {
+        plans: factors.plans[0],
+        allocations: factors.allocations[1],
+        targetPopulations: factors.targetPopulations[1]
       }
-      var actual = thresholdsService.calculateThresholds(getZoneLocation(), stockCount, products, requiredStatesStoresAllocation)
+
+      var expected = expectedThresholdsFor(versions)
+
+      // Should add '20' to all product:a thresholds
+      expected['product:a'].max = expected['product:a'].max + 20
+      expected['product:a'].min = expected['product:a'].min + 20
+      expected['product:a'].reOrder = expected['product:a'].reOrder + 20
+
+      var actual = thresholdsService.calculateThresholds(getLocation('zone'), stockCount, products, requiredStatesStoresAllocation)
       expect(actual).toEqual(expected)
     })
     it('works for zones when no required allocations are provided', function () {
-      var expected = {
-        'product:a': {
-          min: 0,
-          reOrder: 300,
-          max: 600,
-          targetPopulation: 1000
-        },
-        'product:b': {
-          min: 0,
-          reOrder: 600,
-          max: 1200,
-          targetPopulation: 2000
-        }
+      // plans: version 1, targetPopulations: version 2, allocations: version 2
+      var stockCount = { date: { year: 2016, week: 2 } }
+      var versions = {
+        plans: factors.plans[0],
+        allocations: factors.allocations[1],
+        targetPopulations: factors.targetPopulations[1]
       }
-      var actual = thresholdsService.calculateThresholds(getZoneLocation(), stockCount, products)
+      var expected = expectedThresholdsFor(versions)
+      var actual = thresholdsService.calculateThresholds(getLocation('zone'), stockCount, products)
       expect(actual).toEqual(expected)
     })
     it('rounds allocations up to the product presentation', function () {
-      var unroundedLocation = angular.extend({}, location, {
+      // plans: version 1, targetPopulations: version 2, allocations: version 2
+      var stockCount = { date: { year: 2016, week: 2 } }
+      var unroundedLocation = angular.extend({}, getLocation('lga'), {
         allocations: [
           {
             version: 2,
@@ -221,46 +198,38 @@ describe('thresholds service', function () {
       expect(actual).toEqual(expected)
     })
     it('still works if the location doc contains a non versioned targetPopulation field (instead of targetPopulations)', function () {
+      // plans: version 1, targetPopulations: version 1, allocations: version 1
       var stockCount = { date: { year: 2016, week: 1 } }
-      var oldStyleTargetPopulations = {
-        'product:a': 500,
-        'product:b': 1000
+      var oldStyleLocation = {
+        level: 'lga',
+        allocations: factors.allocations,
+        plans: factors.plans,
+        targetPopulation: factors.targetPopulations[0].monthlyTargetPopulations
       }
-      var oldStyleLocation = angular.extend({}, location, { targetPopulation: oldStyleTargetPopulations })
-      delete oldStyleLocation.targetPopulations
-      var expected = {
-        'product:a': {
-          min: 50,
-          reOrder: 100,
-          max: 250,
-          targetPopulation: 500
-        },
-        'product:b': {
-          min: 100,
-          reOrder: 200,
-          max: 500,
-          targetPopulation: 1000
-        }
+      var versions = {
+        plans: factors.plans[0],
+        allocations: factors.allocations[0],
+        targetPopulations: factors.targetPopulations[0]
       }
+      var expected = expectedThresholdsFor(versions)
       var actual = thresholdsService.calculateThresholds(oldStyleLocation, stockCount, products)
       expect(actual).toEqual(expected)
     })
     it('still works if the location doc has no targetPopulation or targetPopulations field', function () {
+      // plans: version 1, targetPopulations: version 1, allocations: version 1
       var stockCount = { date: { year: 2016, week: 1 } }
-      var oldStyleLocation = angular.copy(location)
+      var oldStyleLocation = getLocation('lga')
       delete oldStyleLocation.targetPopulations
-      var expected = {
-        'product:a': {
-          min: 50,
-          reOrder: 100,
-          max: 250
-        },
-        'product:b': {
-          min: 100,
-          reOrder: 200,
-          max: 500
-        }
+
+      var versions = {
+        plans: factors.plans[0],
+        allocations: factors.allocations[0],
+        targetPopulations: factors.targetPopulations[0]
       }
+      var expected = expectedThresholdsFor(versions)
+      delete expected['product:a'].targetPopulation
+      delete expected['product:b'].targetPopulation
+
       var actual = thresholdsService.calculateThresholds(oldStyleLocation, stockCount, products)
       expect(actual).toEqual(expected)
     })
@@ -275,17 +244,19 @@ describe('thresholds service', function () {
       var expected = {
         'zone:nc:state:kogi': {
           date: { year: 2016, week: 2 },
-          thresholds: {
-            'product:a': { min: 100, reOrder: 200, max: 500, targetPopulation: 1000 },
-            'product:b': { min: 200, reOrder: 400, max: 1000, targetPopulation: 2000 }
-          }
+          thresholds: expectedThresholdsFor({
+            plans: factors.plans[0],
+            allocations: factors.allocations[1],
+            targetPopulations: factors.targetPopulations[1]
+          })
         },
         'zone:nc:state:kogi:lga:adavi': {
           date: { year: 2016, week: 1 },
-          thresholds: {
-            'product:a': { min: 50, reOrder: 100, max: 250, targetPopulation: 500 },
-            'product:b': { min: 100, reOrder: 200, max: 500, targetPopulation: 1000 }
-          }
+          thresholds: expectedThresholdsFor({
+            plans: factors.plans[0],
+            allocations: factors.allocations[0],
+            targetPopulations: factors.targetPopulations[0]
+          })
         }
       }
 
