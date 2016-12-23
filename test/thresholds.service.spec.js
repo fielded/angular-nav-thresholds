@@ -36,16 +36,18 @@ describe('thresholds service', function () {
         version: 1,
         date: '2016-01-06', // ISO week: 2016-W01
         monthlyTargetPopulations: {
-          'product:a': 25,
-          'product:b': 100
+          'product:mv': 100,
+          'product:yf': 400,
+          'product:5-reconst-syg': 500
         }
       },
       {
         version: 2,
         date: '2016-01-15', // ISO week: 2016-W02
         monthlyTargetPopulations: {
-          'product:a': 50,
-          'product:b': 200
+          'product:mv': 200,
+          'product:yf': 800,
+          'product:5-reconst-syg': 1000
         }
       }
     ],
@@ -77,10 +79,18 @@ describe('thresholds service', function () {
         version: 1,
         date: '2016-01-06', // ISO week: 2016-W01
         coefficients: {
-          'product:a': {
+          'product:mv': {
             wastage: 2,
             coverage: 0.5,
             doses: 2
+          },
+          'product:yf': {
+            wastage: 1,
+            coverage: 1,
+            doses: 1
+          },
+          'product:5-reconst-syg': {
+            wastage: 2
           }
         }
       },
@@ -88,10 +98,18 @@ describe('thresholds service', function () {
         version: 2,
         date: '2016-01-15', // ISO week: 2016-W02
         coefficients: {
-          'product:a': {
+          'product:mv': {
             wastage: 2,
             coverage: 0.5,
             doses: 4
+          },
+          'product:yf': {
+            wastage: 1,
+            coverage: 1,
+            doses: 1
+          },
+          'product:5-reconst-syg': {
+            wastage: 4
           }
         }
       }
@@ -100,8 +118,9 @@ describe('thresholds service', function () {
 
   var products = [
     // TODO: presentation should be ints
-    { _id: 'product:a', presentation: '10' },
-    { _id: 'product:b', presentation: '2' }
+    { _id: 'product:mv', presentation: '10' },
+    { _id: 'product:yf', presentation: '2' },
+    { _id: 'product:5-reconst-syg', presentation: '1' }
   ]
 
   function getLocation (level) {
@@ -109,20 +128,21 @@ describe('thresholds service', function () {
   }
 
   function expectedThresholdsFor (versions, coefficientsVersion) {
+    var weeklyLevels = products.reduce(function (index, product) {
+      var coefficients = coefficientsVersion[product._id] || {}
+      var weeklyLevel
+      if (product._id === 'product:5-reconst-syg') {
+        weeklyLevel = (index['product:mv'] + index['product:yf']) / 10 * coefficients.wastage
+      } else {
+        weeklyLevel = versions.targetPopulations.monthlyTargetPopulations[product._id] / 4 *
+          coefficients.wastage * coefficients.coverage * coefficients.doses
+      }
+      index[product._id] = weeklyLevel
+      return index
+    }, {})
     return products.reduce(function (index, product) {
       index[product._id] = Object.keys(versions.plans.weeksOfStock).reduce(function (thresholds, key) {
-        var coefficients = coefficientsVersion[product._id] || {}
-        var weeklyLevel = versions.targetPopulations.monthlyTargetPopulations[product._id]
-        if (angular.isNumber(coefficients.wastage)) {
-          weeklyLevel = weeklyLevel * coefficients.wastage
-        }
-        if (angular.isNumber(coefficients.coverage)) {
-          weeklyLevel = weeklyLevel * coefficients.coverage
-        }
-        if (angular.isNumber(coefficients.doses)) {
-          weeklyLevel = weeklyLevel * coefficients.doses
-        }
-        thresholds[key] = versions.plans.weeksOfStock[key] * weeklyLevel
+        thresholds[key] = versions.plans.weeksOfStock[key] * weeklyLevels[product._id]
         return thresholds
       }, {})
       index[product._id].targetPopulation = versions.targetPopulations.monthlyTargetPopulations[product._id]
@@ -155,7 +175,7 @@ describe('thresholds service', function () {
     it('works for zones when a required allocation for zone state stores is provided', function () {
       // plans: version 1, targetPopulations: version 2, allocations: version 2
       var stockCount = { date: { year: 2016, week: 2 } }
-      var requiredStatesStoresAllocation = { 'product:a': 20 }
+      var requiredStatesStoresAllocation = { 'product:mv': 20 }
       var versions = {
         plans: factors.plans[0],
         targetPopulations: factors.targetPopulations[1]
@@ -163,10 +183,10 @@ describe('thresholds service', function () {
 
       var expected = expectedThresholdsFor(versions, productCoefficients.versions[1].coefficients)
 
-      // Should add '20' to all product:a thresholds
-      expected['product:a'].max = expected['product:a'].max + 20
-      expected['product:a'].min = expected['product:a'].min + 20
-      expected['product:a'].reOrder = expected['product:a'].reOrder + 20
+      // Should add '20' to all product:mv thresholds
+      expected['product:mv'].max = expected['product:mv'].max + 20
+      expected['product:mv'].min = expected['product:mv'].min + 20
+      expected['product:mv'].reOrder = expected['product:mv'].reOrder + 20
 
       var actual = thresholdsService.calculateThresholds(getLocation('zone'), stockCount, products, requiredStatesStoresAllocation, productCoefficients)
       expect(actual).toEqual(expected)
@@ -183,7 +203,7 @@ describe('thresholds service', function () {
       expect(actual).toEqual(expected)
     })
     it('rounds allocations up to the product presentation', function () {
-      // plans: version 1, targetPopulations: version 2, allocations: version 2
+      // plans: version 1, targetPopulations: version 2, allocations: version 2, coefficients: 2
       var stockCount = { date: { year: 2016, week: 2 } }
       var unroundedLocation = angular.extend({}, getLocation('lga'), {
         targetPopulations: [
@@ -191,24 +211,31 @@ describe('thresholds service', function () {
             version: 2,
             date: '2016-01-15', // ISO week: 2016-W02
             monthlyTargetPopulations: {
-              'product:a': 49,
-              'product:b': 199
+              'product:mv': 196,
+              'product:yf': 796,
+              'product:5-reconst-syg': 995
             }
           }
         ]
       })
       var expected = {
-        'product:a': {
+        'product:mv': {
           min: 200,
           reOrder: 400,
           max: 980,
-          targetPopulation: 49
+          targetPopulation: 196
         },
-        'product:b': {
+        'product:yf': {
           min: 200,
           reOrder: 398,
           max: 996,
-          targetPopulation: 199
+          targetPopulation: 796
+        },
+        'product:5-reconst-syg': {
+          min: 158, // (weeklyLevel yf + weeklyLevel mv)/10 * coverage
+          reOrder: 316,
+          max: 790,
+          targetPopulation: 995
         }
       }
       var actual = thresholdsService.calculateThresholds(unroundedLocation, stockCount, products, {}, productCoefficients)
@@ -218,7 +245,7 @@ describe('thresholds service', function () {
     // In old docs `targetPopulations` doesn't exist and the `weeklyLevels` aren't necessarily calculated based on the targetPopulation
     // so we can't use the calculation based on coefficients
     it('is backwards compatible with location docs containing a targetPopulation instead of targetPopulations field)', function () {
-      // plans: version 1, targetPopulations: version 1, allocations: version 1
+      // plans: version 1, targetPopulations: version 1, allocations: version 1, coefficients: 1
       var stockCount = { date: { year: 2016, week: 1 } }
       var oldStyleLocation = {
         level: 'lga',
@@ -226,8 +253,9 @@ describe('thresholds service', function () {
           { version: 1,
             date: '2016-01-06', // ISO week: 2016-W01
             weeklyLevels: {
-              'product:a': 50,
-              'product:b': 100
+              'product:mv': 50,
+              'product:yf': 100,
+              'product:5-reconst-syg': 30
             }
           }
         ],
@@ -243,19 +271,21 @@ describe('thresholds service', function () {
           }
         ],
         targetPopulation: {
-          'product:a': 25,
-          'product:b': 100
+          'product:mv': 100,
+          'product:yf': 400,
+          'product:5-reconst-syg': 500
         }
       }
       var expected = {
-        'product:a': { min: 50, reOrder: 100, max: 250, targetPopulation: 25 },
-        'product:b': { min: 100, reOrder: 200, max: 500, targetPopulation: 100 }
+        'product:mv': { min: 50, reOrder: 100, max: 250, targetPopulation: 100 },
+        'product:yf': { min: 100, reOrder: 200, max: 500, targetPopulation: 400 },
+        'product:5-reconst-syg': { min: 30, reOrder: 60, max: 150, targetPopulation: 500 }
       }
       var actual = thresholdsService.calculateThresholds(oldStyleLocation, stockCount, products)
       expect(actual).toEqual(expected)
     })
     it('still works if the location doc has no targetPopulation or targetPopulations field, using weeklyLevels', function () {
-      // plans: version 1, targetPopulations: version 1, allocations: version 1
+      // plans: version 1, targetPopulations: version 1, allocations: version 1, coefficients: 1
       var stockCount = { date: { year: 2016, week: 1 } }
       var oldStyleLocation = {
         level: 'lga',
@@ -263,8 +293,9 @@ describe('thresholds service', function () {
           { version: 1,
             date: '2016-01-06', // ISO week: 2016-W01
             weeklyLevels: {
-              'product:a': 50,
-              'product:b': 100
+              'product:mv': 50,
+              'product:yf': 100,
+              'product:5-reconst-syg': 30
             }
           }
         ],
@@ -281,8 +312,9 @@ describe('thresholds service', function () {
         ]
       }
       var expected = {
-        'product:a': { min: 50, reOrder: 100, max: 250 },
-        'product:b': { min: 100, reOrder: 200, max: 500 }
+        'product:mv': { min: 50, reOrder: 100, max: 250 },
+        'product:yf': { min: 100, reOrder: 200, max: 500 },
+        'product:5-reconst-syg': { min: 30, reOrder: 60, max: 150 }
       }
       var actual = thresholdsService.calculateThresholds(oldStyleLocation, stockCount, products)
       expect(actual).toEqual(expected)
