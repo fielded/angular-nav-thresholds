@@ -77,7 +77,7 @@ const calculateWeeklyLevels = (monthlyTargetPopulations, coefficients) => {
   const weeklyLevelForProduct = (weeklyLevels, productId) => {
     const coefficient = coefficients[productId]
     const targetPopulation = monthlyTargetPopulations[productId]
-    if (!(targetPopulation && coefficient)) {
+    if (!(typeof targetPopulation !== 'undefined' && coefficient)) {
       // TODO: throw error? See #16
       return weeklyLevels
     }

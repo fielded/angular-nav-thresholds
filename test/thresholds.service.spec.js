@@ -266,7 +266,30 @@ describe('thresholds service', function () {
       var actual = thresholdsService.calculateThresholds(unroundedLocation, stockCount, products, {}, productCoefficients)
       expect(actual).toEqual(expected)
     })
-
+    it('works if the monthly target population for a particular product is 0', function () {
+      // plans: version 1, targetPopulations: version 2, coefficients: 2
+      var stockCount = { date: { year: 2016, week: 2 } }
+      var location = angular.extend({}, getLocation('lga'), {
+        targetPopulations: [
+          {
+            version: 2,
+            date: '2016-01-15', // ISO week: 2016-W02
+            monthlyTargetPopulations: {
+              'product:mv': 0,
+              'product:yf': 800,
+              'product:5-reconst-syg': 1000
+            }
+          }
+        ]
+      })
+      var versions = {
+        plans: factors.plans[0],
+        targetPopulations: location.targetPopulations[0]
+      }
+      var expected = expectedThresholdsFor(versions, productCoefficients.versions[1].coefficients)
+      var actual = thresholdsService.calculateThresholds(location, stockCount, products, null, productCoefficients)
+      expect(actual).toEqual(expected)
+    })
     // In old docs `targetPopulations` doesn't exist and the `weeklyLevels` aren't necessarily calculated based on the targetPopulation
     // so we can't use the calculation based on coefficients
     it('is backwards compatible with location docs containing a targetPopulation instead of targetPopulations field)', function () {
