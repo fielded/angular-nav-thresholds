@@ -60,6 +60,8 @@ class ThresholdsService {
         return productThresholds
       }, {})
 
+      index[productId].weeklyLevel = weeklyLevel
+
       if (monthlyTargetPopulations) { // old zone docs have no target population
         index[productId].targetPopulation = monthlyTargetPopulations[productId]
       }

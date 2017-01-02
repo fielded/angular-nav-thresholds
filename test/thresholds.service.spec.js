@@ -145,6 +145,7 @@ describe('thresholds service', function () {
         thresholds[key] = versions.plans.weeksOfStock[key] * weeklyLevels[product._id]
         return thresholds
       }, {})
+      index[product._id].weeklyLevel = weeklyLevels[product._id]
       index[product._id].targetPopulation = versions.targetPopulations.monthlyTargetPopulations[product._id]
       return index
     }, {})
@@ -244,19 +245,22 @@ describe('thresholds service', function () {
           min: 200,
           reOrder: 400,
           max: 980,
-          targetPopulation: 196
+          targetPopulation: 196,
+          weeklyLevel: 196
         },
         'product:yf': {
           min: 200,
           reOrder: 398,
           max: 996,
-          targetPopulation: 796
+          targetPopulation: 796,
+          weeklyLevel: 199
         },
         'product:5-reconst-syg': {
           min: 158, // (weeklyLevel yf + weeklyLevel mv)/10 * coverage
           reOrder: 316,
           max: 790,
-          targetPopulation: 995
+          targetPopulation: 995,
+          weeklyLevel: 158
         }
       }
       var actual = thresholdsService.calculateThresholds(unroundedLocation, stockCount, products, {}, productCoefficients)
@@ -298,9 +302,9 @@ describe('thresholds service', function () {
         }
       }
       var expected = {
-        'product:mv': { min: 50, reOrder: 100, max: 250, targetPopulation: 100 },
-        'product:yf': { min: 100, reOrder: 200, max: 500, targetPopulation: 400 },
-        'product:5-reconst-syg': { min: 30, reOrder: 60, max: 150, targetPopulation: 500 }
+        'product:mv': { min: 50, reOrder: 100, max: 250, targetPopulation: 100, weeklyLevel: 50 },
+        'product:yf': { min: 100, reOrder: 200, max: 500, targetPopulation: 400, weeklyLevel: 100 },
+        'product:5-reconst-syg': { min: 30, reOrder: 60, max: 150, targetPopulation: 500, weeklyLevel: 30 }
       }
       var actual = thresholdsService.calculateThresholds(oldStyleLocation, stockCount, products)
       expect(actual).toEqual(expected)
@@ -324,9 +328,9 @@ describe('thresholds service', function () {
         ]
       })
       var expected = {
-        'product:mv': { min: 50, reOrder: 100, max: 250, targetPopulation: 100 },
-        'product:yf': { min: 100, reOrder: 200, max: 500, targetPopulation: 400 },
-        'product:5-reconst-syg': { min: 30, reOrder: 60, max: 150, targetPopulation: 500 }
+        'product:mv': { min: 50, reOrder: 100, max: 250, targetPopulation: 100, weeklyLevel: 50 },
+        'product:yf': { min: 100, reOrder: 200, max: 500, targetPopulation: 400, weeklyLevel: 100 },
+        'product:5-reconst-syg': { min: 30, reOrder: 60, max: 150, targetPopulation: 500, weeklyLevel: 30 }
       }
       var actual = thresholdsService.calculateThresholds(location, stockCount, products)
       expect(actual).toEqual(expected)
@@ -359,9 +363,9 @@ describe('thresholds service', function () {
         ]
       }
       var expected = {
-        'product:mv': { min: 50, reOrder: 100, max: 250 },
-        'product:yf': { min: 100, reOrder: 200, max: 500 },
-        'product:5-reconst-syg': { min: 30, reOrder: 60, max: 150 }
+        'product:mv': { min: 50, reOrder: 100, max: 250, weeklyLevel: 50 },
+        'product:yf': { min: 100, reOrder: 200, max: 500, weeklyLevel: 100 },
+        'product:5-reconst-syg': { min: 30, reOrder: 60, max: 150, weeklyLevel: 30 }
       }
       var actual = thresholdsService.calculateThresholds(oldStyleLocation, stockCount, products)
       expect(actual).toEqual(expected)
