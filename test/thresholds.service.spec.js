@@ -163,17 +163,38 @@ describe('thresholds service', function () {
       expect(actual).toEqual(expected)
     })
     it('defaults to the oldest factor version if the doc is too old to have a matching one', function () {
-      var stockCount = { date: { year: 2014, week: 1 } }
+      var stockCount = { date: { year: 2016, week: 2 } }
+      var plans = [
+        {
+          version: 1,
+          date: '2016-02-01', // ISO week: 2016-W01
+          weeksOfStock: {
+            max: 5,
+            reOrder: 2,
+            min: 1
+          }
+        },
+        {
+          version: 2,
+          date: '2016-03-01', // ISO week: 2016-W03
+          weeksOfStock: {
+            max: 10,
+            reOrder: 4,
+            min: 2
+          }
+        }
+      ]
+      var location = angular.extend({}, getLocation('lga'), { plans: plans })
       var versions = {
-        plans: factors.plans[0],
-        targetPopulations: factors.targetPopulations[0]
+        plans: plans[0], // chooses version 1 for plans
+        targetPopulations: factors.targetPopulations[1]
       }
-      var expected = expectedThresholdsFor(versions, productCoefficients.versions[0].coefficients)
-      var actual = thresholdsService.calculateThresholds(getLocation('lga'), stockCount, products, null, productCoefficients)
+      var expected = expectedThresholdsFor(versions, productCoefficients.versions[1].coefficients)
+      var actual = thresholdsService.calculateThresholds(location, stockCount, products, null, productCoefficients)
       expect(actual).toEqual(expected)
     })
     it('works for zones when a required allocation for zone state stores is provided', function () {
-      // plans: version 1, targetPopulations: version 2, allocations: version 2
+      // plans: version 1, targetPopulations: version 2, coefficients: version 2
       var stockCount = { date: { year: 2016, week: 2 } }
       var requiredStatesStoresAllocation = { 'product:mv': 20 }
       var versions = {
@@ -192,7 +213,7 @@ describe('thresholds service', function () {
       expect(actual).toEqual(expected)
     })
     it('works for zones when no required allocations are provided', function () {
-      // plans: version 1, targetPopulations: version 2, allocations: version 2
+      // plans: version 1, targetPopulations: version 2, coefficients: version 2
       var stockCount = { date: { year: 2016, week: 2 } }
       var versions = {
         plans: factors.plans[0],
@@ -203,7 +224,7 @@ describe('thresholds service', function () {
       expect(actual).toEqual(expected)
     })
     it('rounds allocations up to the product presentation', function () {
-      // plans: version 1, targetPopulations: version 2, allocations: version 2, coefficients: 2
+      // plans: version 1, targetPopulations: version 2, coefficients: 2
       var stockCount = { date: { year: 2016, week: 2 } }
       var unroundedLocation = angular.extend({}, getLocation('lga'), {
         targetPopulations: [
@@ -245,7 +266,7 @@ describe('thresholds service', function () {
     // In old docs `targetPopulations` doesn't exist and the `weeklyLevels` aren't necessarily calculated based on the targetPopulation
     // so we can't use the calculation based on coefficients
     it('is backwards compatible with location docs containing a targetPopulation instead of targetPopulations field)', function () {
-      // plans: version 1, targetPopulations: version 1, allocations: version 1, coefficients: 1
+      // plans: version 1, targetPopulations: version 1, allocations: version 1
       var stockCount = { date: { year: 2016, week: 1 } }
       var oldStyleLocation = {
         level: 'lga',
@@ -284,8 +305,34 @@ describe('thresholds service', function () {
       var actual = thresholdsService.calculateThresholds(oldStyleLocation, stockCount, products)
       expect(actual).toEqual(expected)
     })
+    // The dynamic calculation doesn't work with the first version of targetPopulations since those
+    // targetPopulations are wrong for states. Instead thresholds are based on `weeklyLevels`.
+    it('calculates thresholds based on weeklyLevels if `targetPopulations` is at version 1)', function () {
+      // plans: version 1, targetPopulations: version 1, allocations: version 1
+      var stockCount = { date: { year: 2016, week: 1 } }
+      var location = angular.extend({}, getLocation('lga'), {
+        level: 'lga',
+        allocations: [
+          { version: 1,
+            date: '2016-01-06', // ISO week: 2016-W01
+            weeklyLevels: {
+              'product:mv': 50,
+              'product:yf': 100,
+              'product:5-reconst-syg': 30
+            }
+          }
+        ]
+      })
+      var expected = {
+        'product:mv': { min: 50, reOrder: 100, max: 250, targetPopulation: 100 },
+        'product:yf': { min: 100, reOrder: 200, max: 500, targetPopulation: 400 },
+        'product:5-reconst-syg': { min: 30, reOrder: 60, max: 150, targetPopulation: 500 }
+      }
+      var actual = thresholdsService.calculateThresholds(location, stockCount, products)
+      expect(actual).toEqual(expected)
+    })
     it('still works if the location doc has no targetPopulation or targetPopulations field, using weeklyLevels', function () {
-      // plans: version 1, targetPopulations: version 1, allocations: version 1, coefficients: 1
+      // plans: version 1, targetPopulations: version 1, allocations: version 1
       var stockCount = { date: { year: 2016, week: 1 } }
       var oldStyleLocation = {
         level: 'lga',
@@ -325,7 +372,7 @@ describe('thresholds service', function () {
     it('takes an array of objects with location, allocations and plans fields and returns an object of location thresholds', function (done) {
       var stockCounts = [ // Note: it doesn't work yet with zones
         { location: { zone: 'nc', state: 'kogi' }, date: { year: 2016, week: 2 } },
-        { location: { zone: 'nc', state: 'kogi', lga: 'adavi' }, date: { year: 2016, week: 1 } }
+        { location: { zone: 'nc', state: 'kogi', lga: 'adavi' }, date: { year: 2016, week: 3 } }
       ]
       var expected = {
         'zone:nc:state:kogi': {
@@ -336,11 +383,11 @@ describe('thresholds service', function () {
           }, productCoefficients.versions[1].coefficients)
         },
         'zone:nc:state:kogi:lga:adavi': {
-          date: { year: 2016, week: 1 },
+          date: { year: 2016, week: 3 },
           thresholds: expectedThresholdsFor({
-            plans: factors.plans[0],
-            targetPopulations: factors.targetPopulations[0]
-          }, productCoefficients.versions[0].coefficients)
+            plans: factors.plans[1],
+            targetPopulations: factors.targetPopulations[1]
+          }, productCoefficients.versions[1].coefficients)
         }
       }
 

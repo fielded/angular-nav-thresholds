@@ -95,12 +95,12 @@ export default function transform (location, productCoefficients, date) {
   if (!weeksOfStock) { somethingIsWrong() }
 
   const isOldDoc = !location.targetPopulations
-  const { targetPopulationVersion, monthlyTargetPopulations } = getTargetPopulations(location, date)
+  const { version, monthlyTargetPopulations } = getTargetPopulations(location, date)
 
   // For backwards compatibility to version before introducing `targetPopulations`,
   // since for that version `weeklyAllocations` were not always calculated
   // based on target population
-  if (isOldDoc || targetPopulationVersion === 1) {
+  if (isOldDoc || version === 1) {
     const weeklyLevels = getWeeklyLevels(location, date)
 
     if (!weeklyLevels) { somethingIsWrong() }
