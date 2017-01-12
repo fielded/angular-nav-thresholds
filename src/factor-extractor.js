@@ -3,9 +3,6 @@ import config from './config/config.json'
 import { find } from './utils.js'
 import calculateWeeklyLevels from './weekly-levels-calculator'
 
-// centralized for whenever we implement #16
-const somethingIsWrong = () => {}
-
 const isVersion = (date, version) => {
   const momentDate = moment().isoWeekYear(date.year).isoWeek(date.week).isoWeekday(1).startOf('day')
   const momentVersionStartDate = moment(version.date, config.versionDateFormat).startOf('isoWeek').startOf('day')
@@ -24,19 +21,26 @@ const getFactor = (versions, date) => {
 
 const getCoefficients = (productCoefficients, date) => {
   if (!(productCoefficients && productCoefficients.versions && productCoefficients.versions.length)) {
-    return somethingIsWrong()
+    throw new Error('missing productCoefficients or productCoefficients.versions')
   }
+
   const version = getFactor(productCoefficients.versions, date)
-  return version && version.coefficients
+  if (!(version && version.coefficients)) {
+    throw new Error(`cannot find version of coefficients for date ${date}`)
+  }
+  return version.coefficients
 }
 
 const getWeeksOfStock = (location, date) => {
   if (!(location.plans && location.plans.length)) {
-    return somethingIsWrong()
+    throw new Error(`missing plans on location ${location._id}`)
   }
 
   const plans = getFactor(location.plans, date)
-  return plans && plans.weeksOfStock
+  if (!(plans && plans.weeksOfStock)) {
+    throw new Error(`cannot find version of weeksOfStock for location ${location._id} and date ${date}`)
+  }
+  return plans.weeksOfStock
 }
 
 const getTargetPopulations = (location, date) => {
@@ -66,46 +70,33 @@ const getTargetPopulations = (location, date) => {
 
 const getWeeklyLevels = (location, date) => {
   if (!(location.allocations && location.allocations.length)) {
-    return somethingIsWrong()
+    throw new Error(`missing allocations on location ${location._id}`)
   }
 
   const allocations = getFactor(location.allocations, date)
-  return allocations && allocations.weeklyLevels
+  if (!(allocations && allocations.weeklyLevels)) {
+    throw new Error(`cannot find version of weeklyLevels for location ${location._id} and date ${date}`)
+  }
+  return allocations.weeklyLevels
 }
 
 export default (location, productCoefficients, date) => {
   const weeksOfStock = getWeeksOfStock(location, date)
-  if (!weeksOfStock) {
-    return somethingIsWrong()
-  }
-
   const { version, monthlyTargetPopulations } = getTargetPopulations(location, date)
 
   // For backwards compatibility to version before introducing `targetPopulations`,
   // since for that version `weeklyAllocations` were not always calculated
   // based on target population
   if (version === 1) {
-    const weeklyLevels = getWeeklyLevels(location, date)
-    if (!weeklyLevels) {
-      return somethingIsWrong()
-    }
-
     return {
-      weeklyLevels,
+      weeklyLevels: getWeeklyLevels(location, date),
       weeksOfStock,
       monthlyTargetPopulations
     }
   }
 
   const coefficients = getCoefficients(productCoefficients, date)
-  if (!(monthlyTargetPopulations && coefficients)) {
-    return somethingIsWrong()
-  }
-
   const weeklyLevels = calculateWeeklyLevels(monthlyTargetPopulations, coefficients)
-  if (!weeklyLevels) {
-    return somethingIsWrong()
-  }
 
   return {
     weeklyLevels,

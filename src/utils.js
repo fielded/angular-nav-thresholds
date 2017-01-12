@@ -7,3 +7,10 @@ export function find (list, match) {
   }
   return undefined
 }
+
+export function somethingIsWrong (msg) {
+  if (console) {
+    console.warn(`angular-nav-thresholds: ${msg}`)
+  }
+  // TODO: log it to Google Analytics (#28)
+}

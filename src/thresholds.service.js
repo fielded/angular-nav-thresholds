@@ -1,5 +1,5 @@
 import defaultCoefficients from './config/coefficients.json'
-import { find } from './utils.js'
+import { find, somethingIsWrong } from './utils.js'
 import getFactors from './factor-extractor.js'
 
 class ThresholdsService {
@@ -16,21 +16,31 @@ class ThresholdsService {
   //
   // Passing the coefficientVersions as a param so that it can be adapted later to use the database doc
   calculateThresholds (location, stockCount, products, requiredStateStoresAllocation = {}, productCoefficients = defaultCoefficients) {
-    if (!(stockCount && stockCount.date)) {
-      return
+    if (!stockCount) {
+      const locationId = location && location._id ? location._id : 'with unknown id'
+      return somethingIsWrong(`missing mandatory param stock count for location ${locationId}`)
+    }
+    if (!stockCount.date) {
+      return somethingIsWrong(`missing date on stock count ${stockCount._id}`)
     }
 
-    if (!(location && location.level)) {
-      return
+    if (!location) {
+      const stockCountId = stockCount && stockCount._id ? stockCount._id : 'with unknown id'
+      return somethingIsWrong(`missing mandatory param location for stock count ${stockCountId}`)
+    }
+    if (!location.level) {
+      return somethingIsWrong(`missing level on location ${location._id}`)
     }
 
     if (!(products && products.length)) {
-      return
+      return somethingIsWrong('missing mandatory param products')
     }
 
-    const locationFactors = getFactors(location, productCoefficients, stockCount.date)
-
-    if (!locationFactors) {
+    let locationFactors
+    try {
+      locationFactors = getFactors(location, productCoefficients, stockCount.date)
+    } catch (e) {
+      somethingIsWrong(e.message)
       return
     }
 
