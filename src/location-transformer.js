@@ -4,7 +4,7 @@ import { find } from './utils.js'
 import calculateWeeklyLevels from './weekly-levels-calculator'
 
 // centralized for whenever we implement #16
-const somethingIsWrong = () => undefined
+const somethingIsWrong = () => {}
 
 const isVersion = (date, version) => {
   const momentDate = moment().isoWeekYear(date.year).isoWeek(date.week).isoWeekday(1).startOf('day')
