@@ -24,7 +24,7 @@ const getFactor = (versions, date) => {
 
 const getCoefficients = (productCoefficients, date) => {
   if (!(productCoefficients && productCoefficients.versions && productCoefficients.versions.length)) {
-    somethingIsWrong()
+    return somethingIsWrong()
   }
   const version = getFactor(productCoefficients.versions, date)
   return version && version.coefficients
@@ -32,7 +32,7 @@ const getCoefficients = (productCoefficients, date) => {
 
 const getWeeksOfStock = (location, date) => {
   if (!(location.plans && location.plans.length)) {
-    somethingIsWrong()
+    return somethingIsWrong()
   }
 
   const plans = getFactor(location.plans, date)
@@ -66,7 +66,7 @@ const getTargetPopulations = (location, date) => {
 
 const getWeeklyLevels = (location, date) => {
   if (!(location.allocations && location.allocations.length)) {
-    somethingIsWrong()
+    return somethingIsWrong()
   }
 
   const allocations = getFactor(location.allocations, date)
@@ -76,7 +76,7 @@ const getWeeklyLevels = (location, date) => {
 export default function transform (location, productCoefficients, date) {
   const weeksOfStock = getWeeksOfStock(location, date)
   if (!weeksOfStock) {
-    somethingIsWrong()
+    return somethingIsWrong()
   }
 
   const { version, monthlyTargetPopulations } = getTargetPopulations(location, date)
@@ -87,7 +87,7 @@ export default function transform (location, productCoefficients, date) {
   if (version === 1) {
     const weeklyLevels = getWeeklyLevels(location, date)
     if (!weeklyLevels) {
-      somethingIsWrong()
+      return somethingIsWrong()
     }
 
     return {
@@ -100,12 +100,12 @@ export default function transform (location, productCoefficients, date) {
 
   const coefficients = getCoefficients(productCoefficients, date)
   if (!(monthlyTargetPopulations && coefficients)) {
-    somethingIsWrong()
+    return somethingIsWrong()
   }
 
   const weeklyLevels = calculateWeeklyLevels(monthlyTargetPopulations, coefficients)
   if (!weeklyLevels) {
-    somethingIsWrong()
+    return somethingIsWrong()
   }
 
   return {
