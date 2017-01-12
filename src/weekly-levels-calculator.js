@@ -61,6 +61,17 @@ calculator.diluentBcg = allocations => allocations['product:bcg']
 calculator.diluentYf = allocations => allocations['product:yf']
 calculator.diluentMv = allocations => allocations['product:mv']
 
-export default (allocations, coefficient, targetPopulation, productId) => (
-  calculator[formulae[productId]](allocations, coefficient, targetPopulation)
+const calculateForProduct = (monthlyTargetPopulations, coefficients, allocations, productId) => {
+  const coefficient = coefficients[productId]
+  const monthlyTargetPopulation = monthlyTargetPopulations[productId]
+
+  allocations[productId] = 0
+  if (typeof monthlyTargetPopulation !== 'undefined' && coefficient) {
+    allocations[productId] = calculator[formulae[productId]](allocations, coefficient, monthlyTargetPopulation / 4)
+  }
+  return allocations
+}
+
+export default (monthlyTargetPopulations, coefficients) => (
+  Object.keys(formulae).reduce(calculateForProduct.bind(null, monthlyTargetPopulations, coefficients), {})
 )

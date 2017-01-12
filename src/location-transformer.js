@@ -1,7 +1,7 @@
 /* global moment:false */
 import config from './config/config.json'
 import { find } from './utils.js'
-import calculateWeeklyLevel from './weekly-levels-calculator'
+import calculateWeeklyLevels from './weekly-levels-calculator'
 
 // centralized for whenever we implement #16
 const somethingIsWrong = () => undefined
@@ -71,22 +71,6 @@ const getWeeklyLevels = (location, date) => {
 
   const allocations = getFactor(location.allocations, date)
   return allocations && allocations.weeklyLevels
-}
-
-const calculateWeeklyLevels = (monthlyTargetPopulations, coefficients) => {
-  const weeklyLevelForProduct = (weeklyLevels, productId) => {
-    const coefficient = coefficients[productId]
-    const targetPopulation = monthlyTargetPopulations[productId]
-    if (!(typeof targetPopulation !== 'undefined' && coefficient)) {
-      // TODO: throw error? See #16
-      return weeklyLevels
-    }
-    weeklyLevels[productId] = calculateWeeklyLevel(
-      weeklyLevels, coefficient, targetPopulation / 4, productId
-    )
-    return weeklyLevels
-  }
-  return Object.keys(monthlyTargetPopulations).reduce(weeklyLevelForProduct, {})
 }
 
 export default function transform (location, productCoefficients, date) {
