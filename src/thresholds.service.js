@@ -1,6 +1,6 @@
 import defaultCoefficients from './config/coefficients.json'
 import { find } from './utils.js'
-import transform from './location-transformer.js'
+import getFactors from './factor-extractor.js'
 
 class ThresholdsService {
   constructor ($q, smartId, lgasService, statesService) {
@@ -28,13 +28,13 @@ class ThresholdsService {
       return
     }
 
-    const transformedLocation = transform(location, productCoefficients, stockCount.date)
+    const locationFactors = getFactors(location, productCoefficients, stockCount.date)
 
-    if (!transformedLocation) {
+    if (!locationFactors) {
       return
     }
 
-    const { weeksOfStock, weeklyLevels, monthlyTargetPopulations } = transformedLocation
+    const { weeksOfStock, weeklyLevels, monthlyTargetPopulations } = locationFactors
 
     return products.reduce((index, product) => {
       const productId = product._id
@@ -53,7 +53,7 @@ class ThresholdsService {
         const roundedLevel = Math.ceil(level / presentation) * presentation
         productThresholds[threshold] = roundedLevel
 
-        if (transformedLocation.level === 'zone' && requiredStateStoresAllocation[productId]) {
+        if (location.level === 'zone' && requiredStateStoresAllocation[productId]) {
           productThresholds[threshold] += requiredStateStoresAllocation[productId]
         }
 

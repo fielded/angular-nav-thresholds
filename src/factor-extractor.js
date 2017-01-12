@@ -73,7 +73,7 @@ const getWeeklyLevels = (location, date) => {
   return allocations && allocations.weeklyLevels
 }
 
-export default function transform (location, productCoefficients, date) {
+export default (location, productCoefficients, date) => {
   const weeksOfStock = getWeeksOfStock(location, date)
   if (!weeksOfStock) {
     return somethingIsWrong()
@@ -91,7 +91,6 @@ export default function transform (location, productCoefficients, date) {
     }
 
     return {
-      level: location.level,
       weeklyLevels,
       weeksOfStock,
       monthlyTargetPopulations
@@ -109,7 +108,6 @@ export default function transform (location, productCoefficients, date) {
   }
 
   return {
-    level: location.level,
     weeklyLevels,
     weeksOfStock,
     monthlyTargetPopulations
