@@ -53,15 +53,13 @@ const getTargetPopulations = (location, date) => {
     }
   }
 
+  if (!(location.targetPopulation && Object.keys(location.targetPopulation).length)) {
+    throw new Error(`missing targetPopulation and targetPopulations fields on location ${location._id}`)
+  }
+
   // For backwards compatibility to version before introducing `targetPopulations`,
   // since we have no control about when the dashboards are going
   // to replicate the new location docs
-  if (!(location.targetPopulation && Object.keys(location.targetPopulation).length)) {
-    return {
-      version: 1
-    }
-  }
-
   return {
     version: 1,
     monthlyTargetPopulations: location.targetPopulation

@@ -358,41 +358,6 @@ describe('thresholds service', function () {
       var actual = thresholdsService.calculateThresholds(location, stockCount, products)
       expect(actual).toEqual(expected)
     })
-    it('still works if the location doc has no targetPopulation or targetPopulations field, using weeklyLevels', function () {
-      // plans: version 1, targetPopulations: version 1, allocations: version 1
-      var stockCount = { date: { year: 2016, week: 1 } }
-      var oldStyleLocation = {
-        level: 'lga',
-        allocations: [
-          { version: 1,
-            date: '2016-01-06', // ISO week: 2016-W01
-            weeklyLevels: {
-              'product:mv': 50,
-              'product:yf': 100,
-              'product:5-reconst-syg': 30
-            }
-          }
-        ],
-        plans: [
-          {
-            version: 1,
-            date: '2016-01-06', // ISO week: 2016-W01
-            weeksOfStock: {
-              max: 5,
-              reOrder: 2,
-              min: 1
-            }
-          }
-        ]
-      }
-      var expected = {
-        'product:mv': { min: 50, reOrder: 100, max: 250, weeklyLevel: 50 },
-        'product:yf': { min: 100, reOrder: 200, max: 500, weeklyLevel: 100 },
-        'product:5-reconst-syg': { min: 30, reOrder: 60, max: 150, weeklyLevel: 30 }
-      }
-      var actual = thresholdsService.calculateThresholds(oldStyleLocation, stockCount, products)
-      expect(actual).toEqual(expected)
-    })
   })
 
   describe('getThresholdsFor', function () {
