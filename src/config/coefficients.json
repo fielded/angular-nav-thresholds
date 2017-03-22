@@ -132,12 +132,12 @@
         },
         "product:mv": {
           "wastage": 1.4285714285714286,
-          "coverage": 0.9,
+          "coverage": 0.95,
           "doses": 1
         },
         "product:opv": {
           "wastage": 1.3333333333333333,
-          "coverage": 0.9,
+          "coverage": 0.94,
           "doses": 4
         },
         "product:pcv": {
@@ -147,7 +147,7 @@
         },
         "product:penta": {
           "wastage": 1.3333333333333333,
-          "coverage": 0.87,
+          "coverage": 0.94,
           "doses": 3
         },
         "product:rota": {
