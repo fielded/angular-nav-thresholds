@@ -20,6 +20,12 @@ describe('thresholds service', function () {
           return $q.when([state])
         }
       })
+      .service('locationService', function ($q) {
+        this.list = function () {
+          var national = angular.extend({}, factors, { _id: 'national', level: 'national' })
+          return $q.when([national])
+        }
+      })
     testMod = angular.module('testMod', ['angularNavData', 'angularNavThresholds'])
   })
 

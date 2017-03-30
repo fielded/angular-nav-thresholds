@@ -3,11 +3,12 @@ import { find, somethingIsWrong } from './utils.js'
 import getFactors from './factor-extractor.js'
 
 class ThresholdsService {
-  constructor ($q, smartId, lgasService, statesService) {
+  constructor ($q, smartId, lgasService, statesService, locationService) {
     this.$q = $q
     this.smartId = smartId
     this.lgasService = lgasService
     this.statesService = statesService
+    this.locationService = locationService
   }
 
   // For zones the thresholds are based on the state store required allocation for
@@ -109,6 +110,11 @@ class ThresholdsService {
           promises.state = this.statesService.list()
         }
         index[id].type = 'state'
+      } else if (scLocation.national) {
+        if (!promises.national) {
+          promises.national = this.locationService.get('national')
+        }
+        index[id].type = 'national'
       }
 
       return index
@@ -117,7 +123,12 @@ class ThresholdsService {
     const addThresholds = (promisesRes) => {
       Object.keys(index).forEach((key) => {
         const item = index[key]
-        const location = find(promisesRes[item.type], isId.bind(null, key))
+        let location
+        if (item.type === 'national') {
+          location = promisesRes[item.type]
+        } else {
+          location = find(promisesRes[item.type], isId.bind(null, key))
+        }
         item.thresholds = this.calculateThresholds(location, item, products, null, productCoefficients)
         delete item.type
       })
@@ -130,6 +141,6 @@ class ThresholdsService {
   }
 }
 
-ThresholdsService.$inject = ['$q', 'smartId', 'lgasService', 'statesService']
+ThresholdsService.$inject = ['$q', 'smartId', 'lgasService', 'statesService', 'locationService']
 
 export default ThresholdsService
