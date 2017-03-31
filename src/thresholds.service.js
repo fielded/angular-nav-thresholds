@@ -97,24 +97,31 @@ class ThresholdsService {
         return index
       }
 
-      const id = this.smartId.idify(scLocation, locationIdPattern)
-      index[id] = { date: stockCount.date }
+      let id
 
-      if (scLocation.lga) {
-        if (!promises.lga) {
-          promises.lga = this.lgasService.list()
-        }
-        index[id].type = 'lga'
-      } else if (scLocation.state) {
-        if (!promises.state) {
-          promises.state = this.statesService.list()
-        }
-        index[id].type = 'state'
-      } else if (scLocation.national) {
+      if (scLocation.national) {
+        id = this.smartId.idify(scLocation, 'national:?')
+        index[id] = { date: stockCount.date }
+        index[id].type = 'national'
+
         if (!promises.national) {
           promises.national = this.locationService.get('national')
         }
-        index[id].type = 'national'
+      } else {
+        id = this.smartId.idify(scLocation, locationIdPattern)
+        index[id] = { date: stockCount.date }
+
+        if (scLocation.lga) {
+          if (!promises.lga) {
+            promises.lga = this.lgasService.list()
+          }
+          index[id].type = 'lga'
+        } else if (scLocation.state) {
+          if (!promises.state) {
+            promises.state = this.statesService.list()
+          }
+          index[id].type = 'state'
+        }
       }
 
       return index

@@ -21,9 +21,9 @@ describe('thresholds service', function () {
         }
       })
       .service('locationService', function ($q) {
-        this.list = function () {
+        this.get = function () {
           var national = angular.extend({}, factors, { _id: 'national', level: 'national' })
-          return $q.when([national])
+          return $q.when(national)
         }
       })
     testMod = angular.module('testMod', ['angularNavData', 'angularNavThresholds'])
@@ -404,10 +404,18 @@ describe('thresholds service', function () {
   describe('getThresholdsFor', function () {
     it('takes an array of objects with location, allocations and plans fields and returns an object of location thresholds', function (done) {
       var stockCounts = [ // Note: it doesn't work yet with zones
+        { location: { national: 'national' }, date: { year: 2016, week: 2 } },
         { location: { zone: 'nc', state: 'kogi' }, date: { year: 2016, week: 2 } },
         { location: { zone: 'nc', state: 'kogi', lga: 'adavi' }, date: { year: 2016, week: 3 } }
       ]
       var expected = {
+        'national:national': {
+          date: { year: 2016, week: 2 },
+          thresholds: expectedThresholdsFor({
+            plans: factors.plans[0],
+            targetPopulations: factors.targetPopulations[1]
+          }, productCoefficients.versions[1].coefficients)
+        },
         'zone:nc:state:kogi': {
           date: { year: 2016, week: 2 },
           thresholds: expectedThresholdsFor({
