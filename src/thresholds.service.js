@@ -3,11 +3,12 @@ import { find, somethingIsWrong } from './utils.js'
 import getFactors from './factor-extractor.js'
 
 class ThresholdsService {
-  constructor ($q, smartId, lgasService, statesService) {
+  constructor ($q, smartId, lgasService, statesService, locationService) {
     this.$q = $q
     this.smartId = smartId
     this.lgasService = lgasService
     this.statesService = statesService
+    this.locationService = locationService
   }
 
   // For zones the thresholds are based on the state store required allocation for
@@ -96,19 +97,31 @@ class ThresholdsService {
         return index
       }
 
-      const id = this.smartId.idify(scLocation, locationIdPattern)
-      index[id] = { date: stockCount.date }
+      let id
 
-      if (scLocation.lga) {
-        if (!promises.lga) {
-          promises.lga = this.lgasService.list()
+      if (scLocation.national) {
+        id = this.smartId.idify(scLocation, 'national:?')
+        index[id] = { date: stockCount.date }
+        index[id].type = 'national'
+
+        if (!promises.national) {
+          promises.national = this.locationService.get('national')
         }
-        index[id].type = 'lga'
-      } else if (scLocation.state) {
-        if (!promises.state) {
-          promises.state = this.statesService.list()
+      } else {
+        id = this.smartId.idify(scLocation, locationIdPattern)
+        index[id] = { date: stockCount.date }
+
+        if (scLocation.lga) {
+          if (!promises.lga) {
+            promises.lga = this.lgasService.list()
+          }
+          index[id].type = 'lga'
+        } else if (scLocation.state) {
+          if (!promises.state) {
+            promises.state = this.statesService.list()
+          }
+          index[id].type = 'state'
         }
-        index[id].type = 'state'
       }
 
       return index
@@ -117,7 +130,12 @@ class ThresholdsService {
     const addThresholds = (promisesRes) => {
       Object.keys(index).forEach((key) => {
         const item = index[key]
-        const location = find(promisesRes[item.type], isId.bind(null, key))
+        let location
+        if (item.type === 'national') {
+          location = promisesRes[item.type]
+        } else {
+          location = find(promisesRes[item.type], isId.bind(null, key))
+        }
         item.thresholds = this.calculateThresholds(location, item, products, null, productCoefficients)
         delete item.type
       })
@@ -130,6 +148,6 @@ class ThresholdsService {
   }
 }
 
-ThresholdsService.$inject = ['$q', 'smartId', 'lgasService', 'statesService']
+ThresholdsService.$inject = ['$q', 'smartId', 'lgasService', 'statesService', 'locationService']
 
 export default ThresholdsService
