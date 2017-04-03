@@ -3,12 +3,12 @@ import { find, somethingIsWrong } from './utils.js'
 import getFactors from './factor-extractor.js'
 
 class ThresholdsService {
-  constructor ($q, smartId, lgasService, statesService, locationService) {
+  constructor ($q, smartId, lgasService, statesService, locationsService) {
     this.$q = $q
     this.smartId = smartId
     this.lgasService = lgasService
     this.statesService = statesService
-    this.locationService = locationService
+    this.locationsService = locationsService
   }
 
   // For zones the thresholds are based on the state store required allocation for
@@ -100,12 +100,12 @@ class ThresholdsService {
       let id
 
       if (scLocation.national) {
-        id = this.smartId.idify(scLocation, 'national:?')
+        id = 'national'
         index[id] = { date: stockCount.date }
         index[id].type = 'national'
 
         if (!promises.national) {
-          promises.national = this.locationService.get('national')
+          promises.national = this.locationsService.get('national')
         }
       } else {
         id = this.smartId.idify(scLocation, locationIdPattern)
@@ -148,6 +148,6 @@ class ThresholdsService {
   }
 }
 
-ThresholdsService.$inject = ['$q', 'smartId', 'lgasService', 'statesService', 'locationService']
+ThresholdsService.$inject = ['$q', 'smartId', 'lgasService', 'statesService', 'locationsService']
 
 export default ThresholdsService

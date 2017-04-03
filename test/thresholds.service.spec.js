@@ -20,7 +20,7 @@ describe('thresholds service', function () {
           return $q.when([state])
         }
       })
-      .service('locationService', function ($q) {
+      .service('locationsService', function ($q) {
         this.get = function () {
           var national = angular.extend({}, factors, { _id: 'national', level: 'national' })
           return $q.when(national)
@@ -409,7 +409,7 @@ describe('thresholds service', function () {
         { location: { zone: 'nc', state: 'kogi', lga: 'adavi' }, date: { year: 2016, week: 3 } }
       ]
       var expected = {
-        'national:national': {
+        'national': {
           date: { year: 2016, week: 2 },
           thresholds: expectedThresholdsFor({
             plans: factors.plans[0],
