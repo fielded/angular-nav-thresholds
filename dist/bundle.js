@@ -214,13 +214,14 @@
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 	var ThresholdsService = function () {
-	  function ThresholdsService($q, smartId, lgasService, statesService) {
+	  function ThresholdsService($q, smartId, lgasService, statesService, locationService) {
 	    _classCallCheck(this, ThresholdsService);
 
 	    this.$q = $q;
 	    this.smartId = smartId;
 	    this.lgasService = lgasService;
 	    this.statesService = statesService;
+	    this.locationService = locationService;
 	  }
 
 	  // For zones the thresholds are based on the state store required allocation for
@@ -341,6 +342,11 @@
 	            promises.state = _this.statesService.list();
 	          }
 	          index[id].type = 'state';
+	        } else if (scLocation.national) {
+	          if (!promises.national) {
+	            promises.national = _this.locationService.get('national');
+	          }
+	          index[id].type = 'national';
 	        }
 
 	        return index;
@@ -349,7 +355,12 @@
 	      var addThresholds = function addThresholds(promisesRes) {
 	        Object.keys(index).forEach(function (key) {
 	          var item = index[key];
-	          var location = find(promisesRes[item.type], isId.bind(null, key));
+	          var location = void 0;
+	          if (item.type === 'national') {
+	            location = promisesRes[item.type];
+	          } else {
+	            location = find(promisesRes[item.type], isId.bind(null, key));
+	          }
 	          item.thresholds = _this.calculateThresholds(location, item, products, null, productCoefficients);
 	          delete item.type;
 	        });
@@ -364,7 +375,7 @@
 	  return ThresholdsService;
 	}();
 
-	ThresholdsService.$inject = ['$q', 'smartId', 'lgasService', 'statesService'];
+	ThresholdsService.$inject = ['$q', 'smartId', 'lgasService', 'statesService', 'locationService'];
 
 	angular.module('angularNavThresholds', ['angularNavData', 'ngSmartId']).service('thresholdsService', ThresholdsService);
 
