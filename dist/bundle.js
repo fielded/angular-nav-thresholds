@@ -214,14 +214,14 @@
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 	var ThresholdsService = function () {
-	  function ThresholdsService($q, smartId, lgasService, statesService, locationService) {
+	  function ThresholdsService($q, smartId, lgasService, statesService, locationsService) {
 	    _classCallCheck(this, ThresholdsService);
 
 	    this.$q = $q;
 	    this.smartId = smartId;
 	    this.lgasService = lgasService;
 	    this.statesService = statesService;
-	    this.locationService = locationService;
+	    this.locationsService = locationsService;
 	  }
 
 	  // For zones the thresholds are based on the state store required allocation for
@@ -332,12 +332,12 @@
 	        var id = void 0;
 
 	        if (scLocation.national) {
-	          id = _this.smartId.idify(scLocation, 'national:?');
+	          id = 'national';
 	          index[id] = { date: stockCount.date };
 	          index[id].type = 'national';
 
 	          if (!promises.national) {
-	            promises.national = _this.locationService.get('national');
+	            promises.national = _this.locationsService.get('national');
 	          }
 	        } else {
 	          id = _this.smartId.idify(scLocation, locationIdPattern);
@@ -382,7 +382,7 @@
 	  return ThresholdsService;
 	}();
 
-	ThresholdsService.$inject = ['$q', 'smartId', 'lgasService', 'statesService', 'locationService'];
+	ThresholdsService.$inject = ['$q', 'smartId', 'lgasService', 'statesService', 'locationsService'];
 
 	angular.module('angularNavThresholds', ['angularNavData', 'ngSmartId']).service('thresholdsService', ThresholdsService);
 
