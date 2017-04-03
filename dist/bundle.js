@@ -329,24 +329,31 @@
 	          return index;
 	        }
 
-	        var id = _this.smartId.idify(scLocation, locationIdPattern);
-	        index[id] = { date: stockCount.date };
+	        var id = void 0;
 
-	        if (scLocation.lga) {
-	          if (!promises.lga) {
-	            promises.lga = _this.lgasService.list();
-	          }
-	          index[id].type = 'lga';
-	        } else if (scLocation.state) {
-	          if (!promises.state) {
-	            promises.state = _this.statesService.list();
-	          }
-	          index[id].type = 'state';
-	        } else if (scLocation.national) {
+	        if (scLocation.national) {
+	          id = _this.smartId.idify(scLocation, 'national:?');
+	          index[id] = { date: stockCount.date };
+	          index[id].type = 'national';
+
 	          if (!promises.national) {
 	            promises.national = _this.locationService.get('national');
 	          }
-	          index[id].type = 'national';
+	        } else {
+	          id = _this.smartId.idify(scLocation, locationIdPattern);
+	          index[id] = { date: stockCount.date };
+
+	          if (scLocation.lga) {
+	            if (!promises.lga) {
+	              promises.lga = _this.lgasService.list();
+	            }
+	            index[id].type = 'lga';
+	          } else if (scLocation.state) {
+	            if (!promises.state) {
+	              promises.state = _this.statesService.list();
+	            }
+	            index[id].type = 'state';
+	          }
 	        }
 
 	        return index;
