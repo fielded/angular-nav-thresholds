@@ -133,6 +133,7 @@ class ThresholdsService {
         let location
         if (item.type === 'national') {
           location = promisesRes[item.type]
+          console.log(location)
         } else {
           location = find(promisesRes[item.type], isId.bind(null, key))
         }

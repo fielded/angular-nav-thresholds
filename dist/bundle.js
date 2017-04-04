@@ -365,6 +365,7 @@
 	          var location = void 0;
 	          if (item.type === 'national') {
 	            location = promisesRes[item.type];
+	            console.log(location);
 	          } else {
 	            location = find(promisesRes[item.type], isId.bind(null, key));
 	          }
