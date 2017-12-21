@@ -166,7 +166,7 @@ describe('thresholds service', function () {
         targetPopulations: factors.targetPopulations[1]
       }
       var expected = expectedThresholdsFor(versions, productCoefficients.versions[1].coefficients)
-      var actual = thresholdsService.calculateThresholds(getLocation('lga'), stockCount, products, null, productCoefficients)
+      var actual = thresholdsService.calculateThresholds(getLocation('lga'), stockCount, products, productCoefficients)
       expect(actual).toEqual(expected)
     })
     it('defaults to the oldest factor version if the doc is too old to have a matching one', function () {
@@ -197,29 +197,10 @@ describe('thresholds service', function () {
         targetPopulations: factors.targetPopulations[1]
       }
       var expected = expectedThresholdsFor(versions, productCoefficients.versions[1].coefficients)
-      var actual = thresholdsService.calculateThresholds(location, stockCount, products, null, productCoefficients)
+      var actual = thresholdsService.calculateThresholds(location, stockCount, products, productCoefficients)
       expect(actual).toEqual(expected)
     })
-    it('works for zones when a required allocation for zone state stores is provided', function () {
-      // plans: version 1, targetPopulations: version 2, coefficients: version 2
-      var stockCount = { date: { year: 2016, week: 2 } }
-      var requiredStatesStoresAllocation = { 'product:mv': 20 }
-      var versions = {
-        plans: factors.plans[0],
-        targetPopulations: factors.targetPopulations[1]
-      }
-
-      var expected = expectedThresholdsFor(versions, productCoefficients.versions[1].coefficients)
-
-      // Should add '20' to all product:mv thresholds
-      expected['product:mv'].max = expected['product:mv'].max + 20
-      expected['product:mv'].min = expected['product:mv'].min + 20
-      expected['product:mv'].reOrder = expected['product:mv'].reOrder + 20
-
-      var actual = thresholdsService.calculateThresholds(getLocation('zone'), stockCount, products, requiredStatesStoresAllocation, productCoefficients)
-      expect(actual).toEqual(expected)
-    })
-    it('works for zones when no required allocations are provided', function () {
+    it('works for zones', function () {
       // plans: version 1, targetPopulations: version 2, coefficients: version 2
       var stockCount = { date: { year: 2016, week: 2 } }
       var versions = {
@@ -227,7 +208,7 @@ describe('thresholds service', function () {
         targetPopulations: factors.targetPopulations[1]
       }
       var expected = expectedThresholdsFor(versions, productCoefficients.versions[1].coefficients)
-      var actual = thresholdsService.calculateThresholds(getLocation('zone'), stockCount, products, {}, productCoefficients)
+      var actual = thresholdsService.calculateThresholds(getLocation('zone'), stockCount, products, productCoefficients)
       expect(actual).toEqual(expected)
     })
     it('rounds allocations up to the product presentation', function () {
@@ -269,7 +250,7 @@ describe('thresholds service', function () {
           weeklyLevel: 158
         }
       }
-      var actual = thresholdsService.calculateThresholds(unroundedLocation, stockCount, products, {}, productCoefficients)
+      var actual = thresholdsService.calculateThresholds(unroundedLocation, stockCount, products, productCoefficients)
       expect(actual).toEqual(expected)
     })
     it('works if the monthly target population for a particular product is 0', function () {
@@ -293,7 +274,7 @@ describe('thresholds service', function () {
         targetPopulations: location.targetPopulations[0]
       }
       var expected = expectedThresholdsFor(versions, productCoefficients.versions[1].coefficients)
-      var actual = thresholdsService.calculateThresholds(location, stockCount, products, null, productCoefficients)
+      var actual = thresholdsService.calculateThresholds(location, stockCount, products, productCoefficients)
       expect(actual).toEqual(expected)
     })
     // In old docs `targetPopulations` doesn't exist and the `weeklyLevels` aren't necessarily calculated based on the targetPopulation
