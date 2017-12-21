@@ -11,12 +11,8 @@ class ThresholdsService {
     this.locationsService = locationsService
   }
 
-  // For zones the thresholds are based on the state store required allocation for
-  // the week, that information is passed as an optional param (`requiredStateStoresAllocation`).
-  // That param is only used for zones.
-  //
   // Passing the coefficientVersions as a param so that it can be adapted later to use the database doc
-  calculateThresholds (location, stockCount, products, requiredStateStoresAllocation = {}, productCoefficients = defaultCoefficients) {
+  calculateThresholds (location, stockCount, products, productCoefficients = defaultCoefficients) {
     if (!stockCount) {
       const locationId = location && location._id ? location._id : 'with unknown id'
       return somethingIsWrong(`missing mandatory param stock count for location ${locationId}`)
@@ -63,11 +59,6 @@ class ThresholdsService {
         const level = weeklyLevel * weeksOfStock[threshold]
         const roundedLevel = Math.ceil(level / presentation) * presentation
         productThresholds[threshold] = roundedLevel
-
-        if (location.level === 'zone' && requiredStateStoresAllocation[productId]) {
-          productThresholds[threshold] += requiredStateStoresAllocation[productId]
-        }
-
         return productThresholds
       }, {})
 
@@ -85,8 +76,6 @@ class ThresholdsService {
     const isId = (id, item) => item._id === id
 
     // TODO: make it work for zones too.
-    // For making it work with zones, we need to take into account the amount of stock
-    // to be allocated to the zone state stores in a particular week
     const locationIdPattern = 'zone:?state:?lga'
     let index = {}
     let promises = {}
@@ -133,11 +122,10 @@ class ThresholdsService {
         let location
         if (item.type === 'national') {
           location = promisesRes[item.type]
-          console.log(location)
         } else {
           location = find(promisesRes[item.type], isId.bind(null, key))
         }
-        item.thresholds = this.calculateThresholds(location, item, products, null, productCoefficients)
+        item.thresholds = this.calculateThresholds(location, item, products, productCoefficients)
         delete item.type
       })
 
