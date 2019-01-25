@@ -45,7 +45,7 @@ class ThresholdsService {
       return
     }
 
-    const { weeksOfStock, weeklyLevels, monthlyTargetPopulations } = locationFactors
+    const { supplyPlan, weeklyLevels, monthlyTargetPopulations } = locationFactors
 
     return products.reduce((index, product) => {
       const productId = product._id
@@ -59,8 +59,15 @@ class ThresholdsService {
         presentation = parseInt(product.presentation, 10)
       }
 
-      index[productId] = Object.keys(weeksOfStock).reduce((productThresholds, threshold) => {
-        const level = weeklyLevel * weeksOfStock[threshold]
+      // Original version 1 plans only allow
+      // one supply plan for all products
+      let productPlan = supplyPlan.weeksOfStock
+      if (supplyPlan.version === 2) {
+        productPlan = supplyPlan.products[productId]
+      }
+
+      index[productId] = Object.keys(productPlan).reduce((productThresholds, threshold) => {
+        const level = weeklyLevel * productPlan[threshold]
         const roundedLevel = Math.ceil(level / presentation) * presentation
         productThresholds[threshold] = roundedLevel
 

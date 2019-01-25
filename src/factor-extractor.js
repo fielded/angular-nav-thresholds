@@ -40,7 +40,8 @@ const getWeeksOfStock = (location, date) => {
   if (!(plans && plans.weeksOfStock)) {
     throw new Error(`cannot find version of weeksOfStock for location ${location._id} and date ${date}`)
   }
-  return plans.weeksOfStock
+
+  return plans
 }
 
 const getTargetPopulations = (location, date) => {
@@ -84,13 +85,15 @@ export default (location, productCoefficients, date) => {
   const weeksOfStock = getWeeksOfStock(location, date)
   const { version, monthlyTargetPopulations } = getTargetPopulations(location, date)
 
+  console.log('Using supplyPlan', weeksOfStock)
+
   // For backwards compatibility to version before introducing `targetPopulations`,
   // since for that version `weeklyAllocations` were not always calculated
   // based on target population
   if (version === 1) {
     return {
       weeklyLevels: getWeeklyLevels(location, date),
-      weeksOfStock,
+      supplyPlan: weeksOfStock,
       monthlyTargetPopulations
     }
   }
@@ -100,7 +103,7 @@ export default (location, productCoefficients, date) => {
 
   return {
     weeklyLevels,
-    weeksOfStock,
+    supplyPlan: weeksOfStock,
     monthlyTargetPopulations
   }
 }

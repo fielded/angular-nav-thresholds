@@ -68,7 +68,7 @@ describe('thresholds service', function () {
         }
       },
       {
-        version: 2,
+        version: 1,
         date: '2016-01-20', // ISO week: 2016-W03
         weeksOfStock: {
           max: 10,
@@ -182,7 +182,7 @@ describe('thresholds service', function () {
           }
         },
         {
-          version: 2,
+          version: 1,
           date: '2016-03-01', // ISO week: 2016-W03
           weeksOfStock: {
             max: 10,
