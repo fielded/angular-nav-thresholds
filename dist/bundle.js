@@ -139,7 +139,8 @@
 	  if (!(plans && plans.weeksOfStock)) {
 	    throw new Error('cannot find version of weeksOfStock for location ' + location._id + ' and date ' + date);
 	  }
-	  return plans.weeksOfStock;
+
+	  return plans;
 	};
 
 	var getTargetPopulations = function getTargetPopulations(location, date) {
@@ -194,7 +195,7 @@
 	  if (version === 1) {
 	    return {
 	      weeklyLevels: getWeeklyLevels(location, date),
-	      weeksOfStock: weeksOfStock,
+	      supplyPlan: weeksOfStock,
 	      monthlyTargetPopulations: monthlyTargetPopulations
 	    };
 	  }
@@ -204,7 +205,7 @@
 
 	  return {
 	    weeklyLevels: weeklyLevels,
-	    weeksOfStock: weeksOfStock,
+	    supplyPlan: weeksOfStock,
 	    monthlyTargetPopulations: monthlyTargetPopulations
 	  };
 	});
@@ -266,7 +267,7 @@
 	      }
 
 	      var _locationFactors = locationFactors,
-	          weeksOfStock = _locationFactors.weeksOfStock,
+	          supplyPlan = _locationFactors.supplyPlan,
 	          weeklyLevels = _locationFactors.weeklyLevels,
 	          monthlyTargetPopulations = _locationFactors.monthlyTargetPopulations;
 
@@ -283,8 +284,15 @@
 	          presentation = parseInt(product.presentation, 10);
 	        }
 
-	        index[productId] = Object.keys(weeksOfStock).reduce(function (productThresholds, threshold) {
-	          var level = weeklyLevel * weeksOfStock[threshold];
+	        // Original version 1 plans only allow
+	        // one supply plan for all products
+	        var productPlan = supplyPlan.weeksOfStock;
+	        if (supplyPlan.version === 2) {
+	          productPlan = supplyPlan.products[productId];
+	        }
+
+	        index[productId] = Object.keys(productPlan).reduce(function (productThresholds, threshold) {
+	          var level = weeklyLevel * productPlan[threshold];
 	          var roundedLevel = Math.ceil(level / presentation) * presentation;
 	          productThresholds[threshold] = roundedLevel;
 
