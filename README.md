@@ -1,5 +1,7 @@
 # angular-nav-thresholds
 
+**Deprecated**: This repository has been deprecated together with https://github.com/fielded/nav-integrated-state-dashboard.
+
 [![Build Status][travis-image]][travis-url]
 [![npm version][npm-image]][npm-url]
 [![License][license-image]][license-url]
